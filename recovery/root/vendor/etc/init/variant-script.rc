@@ -1,0 +1,6 @@
+service variant-script /system/bin/variant-script.sh
+    user root
+    group root
+    oneshot
+    disabled
+    seclabel u:r:recovery:s0
