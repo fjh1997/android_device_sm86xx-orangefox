@@ -69,8 +69,8 @@ TARGET_USERIMAGES_USE_F2FS := true
 TW_USE_DMCTL               := true
 
 # Init
-TARGET_INIT_VENDOR_LIB          := //$(DEVICE_PATH):libinit_oplus_caihong
-TARGET_RECOVERY_DEVICE_MODULES  := libinit_oplus_caihong
+TARGET_INIT_VENDOR_LIB          := //$(DEVICE_PATH):libinit_oplus_sm86xx
+TARGET_RECOVERY_DEVICE_MODULES  := libinit_oplus_sm86xx
 
 # Kernel
 BOARD_KERNEL_IMAGE_NAME     := Image
@@ -96,8 +96,8 @@ TARGET_COPY_OUT_ODM             := odm
 TARGET_COPY_OUT_VENDOR          := vendor
 
 # Platform
-TARGET_BOARD_PLATFORM   := caihong
-QCOM_BOARD_PLATFORMS    += caihong
+TARGET_BOARD_PLATFORM   := sm86xx
+QCOM_BOARD_PLATFORMS    += sm86xx
 
 # Recovery
 BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE    := true
