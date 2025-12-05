@@ -1,20 +1,19 @@
-/*
- * Copyright (C) 2022-2025 The LineageOS Project
- * SPDX-License-Identifier: Apache-2.0
- */
-
 #include <android-base/logging.h>
 #include <android-base/parseint.h>
 #include <android-base/properties.h>
+#include <android-base/file.h>  // 新增：读取文件所需头文件
+#include <android-base/strings.h>  // 新增：字符串分割/匹配所需头文件
 #define _REALLY_INCLUDE_SYS__SYSTEM_PROPERTIES_H_
 #include <sys/_system_properties.h>
 
 #include <fs_mgr.h>
 #include <unordered_map>
+#include <vector>  // 新增：std::vector 所需头文件
+#include <string>
 
 using android::base::GetProperty;
-using android::fs_mgr::GetKernelCmdline;
 
+// 地区映射表（保持原定义不变）
 const std::unordered_map<int, std::string> kRegionSuffixMap = {
     {27,    "IN"},
     {55,    "RU"},
@@ -24,6 +23,7 @@ const std::unordered_map<int, std::string> kRegionSuffixMap = {
     {0,     ""},    // Default
 };
 
+// 设备型号信息表（保持原定义不变）
 struct ModelInfo {
     const char* brand;              // ro.product.brand
     const char* device;             // ro.product.device
@@ -51,11 +51,7 @@ const std::unordered_map<int, ModelInfo> kModelInfoMap = {
     {0,     {"OPLUS",   "SM86XX",   "OPLUS",   "SM86XX",    "SM86XX",  "OPLUS",                 "0"}}, // Default
 };
 
-/*
- * SetProperty does not allow updating read only properties and as a result
- * does not work for our use case. Write "OverrideProperty" to do practically
- * the same thing as "SetProperty" without this restriction.
- */
+// 覆盖系统属性函数（保持原定义不变）
 void OverrideProperty(const char* name, const char* value) {
     size_t valuelen = strlen(value);
 
@@ -67,6 +63,7 @@ void OverrideProperty(const char* name, const char* value) {
     }
 }
 
+// 设置设备属性函数（保持原定义不变）
 void SetupModelProperties(const ModelInfo& info, const std::string& region) {
     std::string name = info.base_name + region;
     struct PropPair {
@@ -85,7 +82,6 @@ void SetupModelProperties(const ModelInfo& info, const std::string& region) {
         {"ro.product.system_ext.model",     info.model},
         {"ro.product.vendor.model",         info.model},
         {"ro.product.odm.model",            info.model},
-        {"ro.product.odm.model",            info.model},
         {"ro.product.vendor.device",        info.device},
         {"ro.product.odm.device",           info.device},
         {"ro.product.product.device",       info.device},
@@ -100,7 +96,23 @@ void SetupModelProperties(const ModelInfo& info, const std::string& region) {
 
 void vendor_load_properties() {
     std::string buf = "0";
-    GetKernelCmdline("oplus_region", &buf);
+
+    // 插入：Android 12+ 兼容的内核命令行读取逻辑
+    std::string cmdline;
+    android::base::ReadFileToString("/proc/cmdline", &cmdline);
+
+    // 分割命令行参数，提取 oplus_region 的值
+    std::vector<std::string> parts = android::base::Split(cmdline, " ");
+    for (const auto& part : parts) {
+        if (android::base::StartsWith(part, "oplus_region=")) {
+            buf = part.substr(strlen("oplus_region="));
+            break;
+        }
+    }
+    // 若未找到，默认设为 0
+    if (buf.empty()) {
+        buf = "0";
+    }
 
     auto region = std::stoi(buf);
     auto region_suffix_iter = kRegionSuffixMap.find(region);
@@ -109,5 +121,4 @@ void vendor_load_properties() {
     auto model_info = kModelInfoMap.find(prjname);
 
     SetupModelProperties(model_info->second, region_suffix_iter->second);
-
 }
