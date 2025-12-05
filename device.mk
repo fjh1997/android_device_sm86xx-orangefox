@@ -10,8 +10,8 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/base.mk)
 # Inherit from this product for devices that support only 64-bit apps using:
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
 
-# Enable virtual A/B OTA
-$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota.mk)
+# Configure virtual_ab compression.mk
+$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/compression.mk)
 
 # Enable Project Quotas and Case Folding
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
@@ -26,9 +26,10 @@ $(call inherit-product, $(LOCAL_PATH)/fox_sm86xx.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/gsi_keys.mk)
 
 # Shipping API level
-BOARD_SHIPPING_API_LEVEL    := 35
-PRODUCT_SHIPPING_API_LEVEL  := 35
-PRODUCT_TARGET_VNDK_VERSION := 35
+BOARD_SHIPPING_API_LEVEL    := 32
+PRODUCT_SHIPPING_API_LEVEL  := 32
+BOARD_SYSTEMSDK_VERSIONS := 32
+PRODUCT_TARGET_VNDK_VERSION := 32
 
 # Dynamic partitions
 PRODUCT_USE_DYNAMIC_PARTITIONS := true

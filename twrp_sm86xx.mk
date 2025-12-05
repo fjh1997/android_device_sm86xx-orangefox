@@ -11,7 +11,7 @@ $(call inherit-product, $(DEVICE_PATH)/device.mk)
   
 ## Device identifier
 PRODUCT_DEVICE  := sm86xx
-PRODUCT_NAME    := orangefox_sm86xx
+PRODUCT_NAME    := twrp_sm86xx
 PRODUCT_BRAND := OnePlus
 PRODUCT_MANUFACTURER := OnePlus
 # Theme

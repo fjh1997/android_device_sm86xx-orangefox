@@ -1,24 +1,3 @@
-#
-#	This file is part of the OrangeFox Recovery Project
-# 	Copyright (C) 2025 The OrangeFox Recovery Project
-#
-#	OrangeFox is free software: you can redistribute it and/or modify
-#	it under the terms of the GNU General Public License as published by
-#	the Free Software Foundation, either version 3 of the License, or
-#	any later version.
-#
-#	OrangeFox is distributed in the hope that it will be useful,
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#	GNU General Public License for more details.
-#
-# 	This software is released under GPL version 3 or any later version.
-#	See <http://www.gnu.org/licenses/>.
-#
-# 	Please maintain this if you use this script or any part of it
-#
-
-
  OF_MAINTAINER := adontoo & nanya & good-name-awa
  
  #display for pad
@@ -35,6 +14,7 @@
  OF_FORCE_DATA_FORMAT_F2FS := 1
  OF_UNBIND_SDCARD_F2FS := 1
  OF_WIPE_METADATA_AFTER_DATAFORMAT := 1
+ OF_DYNAMIC_FULL_SIZE := 14578294784
  OF_DISPLAY_FORMAT_FILESYSTEMS_DEBUG_INFO := 1
  OF_FORCE_PREBUILT_KERNEL := 1
  OF_NO_RELOAD_AFTER_DECRYPTION := 1

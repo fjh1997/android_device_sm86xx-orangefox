@@ -12,6 +12,9 @@ BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES    := true
 BUILD_BROKEN_NINJA_USES_ENV_VARS    += RTIC_MPGEN
 BUILD_BROKEN_PLUGIN_VALIDATION      := soong-libaosprecovery_defaults soong-libguitwrp_defaults soong-libminuitwrp_defaults soong-vold_defaults
 
+# 在BoardConfig.mk中添加自定义分区支持
+TW_INCLUDE_OPPO_PARTITIONS := true
+
 # Architecture
 TARGET_ARCH                 := arm64
 TARGET_ARCH_VARIANT         := armv8-a
@@ -88,9 +91,11 @@ BOARD_RECOVERYIMAGE_PARTITION_SIZE      := 0x6400000
 BOARD_SUPER_PARTITION_SIZE                  := 14578294784
 BOARD_SUPER_PARTITION_GROUPS                := qti_dynamic_partitions
 BOARD_QTI_DYNAMIC_PARTITIONS_SIZE           := 14574100480
-BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST := system system_dlkm system_ext product vendor vendor_dlkm odm
-BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST += my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock
 
+BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST := system vendor product system_ext odm vendor_dlkm odm_dlkm
+	
+BOARD_DYNAMIC_PARTITIONS_PARTITION_LIST += my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock
+	
 BOARD_ODMIMAGE_FILE_SYSTEM_TYPE := ext4
 TARGET_COPY_OUT_ODM             := odm
 TARGET_COPY_OUT_VENDOR          := vendor
@@ -152,3 +157,4 @@ TW_LOAD_VENDOR_MODULES_EXCLUDE_GKI      := true
 TW_NO_SCREEN_BLANK                      := true
 TW_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID  := true
 TW_ROTATION := 270
+
