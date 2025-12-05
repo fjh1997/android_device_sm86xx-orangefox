@@ -131,7 +131,7 @@ jobs:
       
     - name: Building OrangeFox
       run: |
-     cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}
         set +e
         export USE_CCACHE=1
         export CCACHE_EXEC=/usr/bin/ccache
