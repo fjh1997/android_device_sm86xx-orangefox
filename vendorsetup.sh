@@ -101,7 +101,7 @@
 	# 使小米平板5 Pro和小米平板5 Pro 5G都能刷入橙狐zip卡刷包
 	export TARGET_DEVICE_ALT="caihong,sm86xx"
 	# 使橙狐可以刷入具有机型检测限制为小米平板5 Pro或者小米平板5 Pro 5G的zip卡刷包，与TARGET_OTA_ASSERT_DEVICE冲突
-	# export FOX_TARGET_DEVICES="elish,enuma"
+	export FOX_TARGET_DEVICES="caihong,sm86xx"
 
 	# 为“快速备份”指定默认选择的分区
 	export OF_QUICK_BACKUP_LIST="/boot;/data;"
