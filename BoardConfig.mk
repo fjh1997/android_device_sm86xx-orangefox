@@ -22,6 +22,7 @@ TARGET_CPU_ABI              := arm64-v8a
 TARGET_CPU_VARIANT          := kryo
 
 # A/B
+AB_OTA_UPDATER := true
 AB_OTA_PARTITIONS := \
     boot \
     init_boot \
@@ -141,7 +142,7 @@ VENDOR_SECURITY_PATCH           := $(PLATFORM_SECURITY_PATCH)
 TW_DEVICE_VERSION               := OPLUS-PINEAPPLE
 
 # Verified Boot
-BOARD_AVB_ENABLE := true
+BOARD_AVB_ENABLE := false
 
 # Vibrator
 TW_SUPPORT_INPUT_AIDL_HAPTICS := true
