@@ -6,14 +6,13 @@
 
 DEVICE_PATH := device/oplus/sm86xx
 
-# Inherit from device.mk configuration
+# Inherit from munch device
 $(call inherit-product, $(DEVICE_PATH)/device.mk)
-
+  
 ## Device identifier
 PRODUCT_DEVICE  := sm86xx
 PRODUCT_NAME    := orangefox_sm86xx
 PRODUCT_BRAND := OnePlus
-PRODUCT_MODEL := OPD2403
 PRODUCT_MANUFACTURER := OnePlus
 # Theme
 TW_STATUS_ICONS_ALIGN   := center

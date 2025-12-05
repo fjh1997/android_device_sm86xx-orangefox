@@ -4,20 +4,23 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-# Configure base.mk
+# Inherit from the common Open Source product configuration
 $(call inherit-product, $(SRC_TARGET_DIR)/product/base.mk)
 
-# Configure core_64_bit_only.mk
+# Inherit from this product for devices that support only 64-bit apps using:
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
 
-# Configure virtual_ab compression.mk
-$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota/compression_with_xor.mk)
+# Enable virtual A/B OTA
+$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota.mk)
 
-# Configure emulated_storage.mk
+# Enable Project Quotas and Case Folding
 $(call inherit-product, $(SRC_TARGET_DIR)/product/emulated_storage.mk)
 
-# Configure twrp common.mk
+# Inherit some common twrp stuff.
 $(call inherit-product, vendor/twrp/config/common.mk)
+
+# Installs gsi keys into ramdisk, to boot a developer GSI with verified boot.
+$(call inherit-product, $(SRC_TARGET_DIR)/product/gsi_keys.mk)
 
 # Shipping API level
 BOARD_SHIPPING_API_LEVEL    := 35
