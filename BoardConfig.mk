@@ -15,6 +15,8 @@ BUILD_BROKEN_PLUGIN_VALIDATION      := soong-libaosprecovery_defaults soong-libg
 # 在BoardConfig.mk中添加自定义分区支持
 TW_INCLUDE_OPPO_PARTITIONS := true
 
+# 备份时忽略ksu,apatch文件夹,避免错误
+TW_BACKUP_EXCLUSIONS := /data/adb/ap,/data/adb/ksu
 # Architecture
 TARGET_ARCH                 := arm64
 TARGET_ARCH_VARIANT         := armv8-a
@@ -59,6 +61,9 @@ TARGET_BOOTLOADER_BOARD_NAME    := pineapple
 # Crypto
 BOARD_USES_METADATA_PARTITION   := true
 TW_INCLUDE_CRYPTO               := true
+# 高通平台 FBE 解密专属配置（补充到 BoardConfig.mk 的 Crypto 模块下）
+TARGET_USES_QCOM_FBE_DECRYPTION := true
+
 
 # Debug
 TARGET_USES_LOGD                := true

@@ -78,6 +78,12 @@
 	# 自定义闪光灯路径，修复闪光灯
 	# export OF_FL_PATH1=/sys/class/leds/led:torch_0
 	# export OF_FL_PATH2=/sys/class/leds/led:torch_1
+	
+    # 启用橙狐 Data 解密（核心开关，必须添加）
+    export FOX_ENABLE_DATA_DECRYPTION=true
+    # 明确指定 FBE 加密类型（sm86xx 设备默认 FBE，补充后更稳妥）
+    export FOX_FBE_DECRYPTION=true
+
 
 	## 界面显示设定
 	# 设置屏幕高度，状态栏高度，状态栏左右边距
