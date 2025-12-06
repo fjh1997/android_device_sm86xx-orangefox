@@ -9,19 +9,6 @@
 - OPPO Find X7 Ultra / Satellite
 ## Build it yourself?
 
-```shell
-mkdir twrp && cd twrp
-repo init --depth=1 -u https://github.com/TWRP-Test/platform_manifest_twrp_aosp.git -b twrp-16.0
-repo sync
-git clone --depth=1 https://github.com/adontoo/twrp_device_oplus_sm86xx device/oplus/sm86xx
-```
-
-```shell
-source build/envsetup.sh
-lunch twrp_sm86xx
-m recoveryimage
-```
-
 If there is no error, recovery.img will be found in `out/target/product/sm86xx/recovery.img`
 
 ## Features
