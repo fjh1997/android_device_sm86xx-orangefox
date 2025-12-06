@@ -41,10 +41,6 @@ on:
         - boot
         - recovery
         - vendorboot
-      LDCHECK:
-        description: 'Path of blobs to check' 
-        required: true
-        default: 'system/bin/qseecomd'
       RECOVERY_TAR:
         description: 'Release recovery.tar For Samsung devices'
         required: false
@@ -236,12 +232,3 @@ jobs:
           Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
           MD5 (img): ${{ env.MD5_IMG }}
           
-    - name: Run LDCheck
-      run: |
-        cd tools
-        mv -n libneeds ${{ env.FILE_PATH }}/recovery/root/
-        mv -n ldcheck ${{ env.FILE_PATH }}/recovery/root/
-        cd ${{ env.FILE_PATH }}/recovery/root/
-        python3 ldcheck -p system/lib64:vendor/lib64:system/lib:vendor/lib -d ${{ github.event.inputs.LDCHECK }}
-        echo "Done checking missing dependencies. Review, and reconfigure your tree."
-      continue-on-error: true
