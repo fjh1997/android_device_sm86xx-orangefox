@@ -160,31 +160,11 @@ jobs:
           # 执行前面生成的编译命令（修复冗余冲突）
           ${{ steps.build_cmd.outputs.result }}
 
-      - name: Set Build Date
+      
+      - name: Set Release Properties
         run: |
-          echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
-          DEVICE_TREE_URL="${{ github.event.inputs.DEVICE_TREE }}"
-          if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
-            DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
-          fi
-          echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
-
-      - name: Check if Recovery Exist
-        run: |
-          cd ${FOX_BUILD_DIR}
-          # 修复退出命令（cd Exit → exit 1）
-          if [ -f out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.img ]; then
-              echo "CHECK_IMG_IS_OK=true" >> $GITHUB_ENV
-              echo "FILE_PATH=${FOX_BUILD_DIR}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
-              echo "MD5_IMG=$(md5sum out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
-          elif [ -f out/target/product/${{ github.event.inputs.DEVICE_NAME }}/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.img ]; then
-              echo "CHECK_IMG_IS_OK=true" >> $GITHUB_ENV
-              echo "FILE_PATH=${FOX_BUILD_DIR}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/target/product/${{ github.event.inputs.DEVICE_NAME }}" >> $GITHUB_ENV
-              echo "MD5_IMG=$(md5sum out/target/product/${{ github.event.inputs.DEVICE_NAME }}/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
-          else
-              echo "Recovery out directory is empty."
-              exit 1
-          fi
+          echo "BUILD_DATE=$(TZ=Asia/Manila date +%Y%m%d)" >> $GITHUB_ENV
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}
 
       - name: Rename the Recovery
         run: |
