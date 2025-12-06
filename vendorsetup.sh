@@ -122,7 +122,7 @@
 	# 使用新版的magiskboot(2024以后的版本，新设备可能需要，可能与修改启动图等功能冲突)
 	export FOX_USE_UPDATED_MAGISKBOOT=1
 	# 当修补recovery/boot镜像时，始终指示magiskboot v24+修补vbmeta标头（自动禁用avb验证？）
-	export FOX_PATCH_VBMETA_FLAG=1
+	#export FOX_PATCH_VBMETA_FLAG=1
 	# 标记该设备肯定是原生Android 11+虚拟A/B（“VAB”）设备
 	export FOX_VIRTUAL_AB_DEVICE=1
 	# 指定super分区的完整大小，修复部分设备刷入miui rom失败，VAB设备专用变量
@@ -142,7 +142,7 @@
 	# 安装压缩包页面选项的最大数量，调小这个值会显示滚动条（大于4小于9时生效，默认为4）
 	export OF_OPTIONS_LIST_NUM=11
 	# 跳过新版fstab处理
-	export OF_FORCE_USE_RECOVERY_FSTAB=1
+	# export OF_FORCE_USE_RECOVERY_FSTAB=1
 	# 指定默认keymaster版本为4.0
 	export OF_DEFAULT_KEYMASTER_VERSION=4.0
 
