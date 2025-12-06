@@ -24,23 +24,10 @@ on:
         description: 'Specify your device path.'
         required: true
         default: 'device/oplus/sm86xx'
-      TWRP_BOOTABLE_RECOVERY:
-        description: "bootable_recovery"
-        required: true
-        default: "https://github.com/TWRP-Test/android_bootable_recovery"
       DEVICE_NAME:
         description: 'Specify your Device Codename.'
         required: true
         default: 'sm86xx'
-      BUILD_TARGET:
-        description: 'Specify your Build Target'
-        required: true
-        default: 'recovery'
-        type: choice
-        options:
-          - boot
-          - recovery
-          - vendorboot
       RECOVERY_TAR:
         description: 'Release recovery.tar For Samsung devices'
         required: false
@@ -109,13 +96,6 @@ jobs:
           --path ${FOX_BUILD_DIR} \
           --depth=1 
 
-      - name: Setup bootable_recovery
-        run: |
-          # 进入编译目录后操作（修复路径错误）
-          cd ${FOX_BUILD_DIR}
-          rm -rf bootable/recovery
-          git clone ${{ github.event.inputs.TWRP_BOOTABLE_RECOVERY }} bootable/recovery
-
       - name: Clone Device Tree
         run: |
           cd ${FOX_BUILD_DIR}
@@ -140,26 +120,6 @@ jobs:
         run: |
           echo "BUILD_DATE=$(TZ=Asia/Manila date +%Y%m%d)" >> $GITHUB_ENV
           cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}
-
-      - name: Rename the Recovery
-        run: |
-          cd ${{ env.FILE_PATH }}/
-          if [ "${{ github.event.inputs.BUILD_TARGET }}" = "boot" ]; then
-            mv OrangeFox*.img boot.img
-            echo "RECOVERY_TYPE=boot" >> $GITHUB_ENV
-            echo "boot.img file found!"
-          elif [ "${{ github.event.inputs.BUILD_TARGET }}" = "recovery" ]; then
-            mv OrangeFox*.img recovery.img
-            echo "RECOVERY_TYPE=recovery" >> $GITHUB_ENV
-            echo "recovery.img file found!"
-          elif [ "${{ github.event.inputs.BUILD_TARGET }}" = "vendorboot" ]; then
-            mv OrangeFox*.img vendor_boot.img
-            echo "RECOVERY_TYPE=vendor_boot" >> $GITHUB_ENV
-            echo "vendor_boot.img file found!"
-          else
-            echo "No Recovery file found!"
-          fi
-        continue-on-error: true
       
       - name: Include Recovery Installer
         run: |
