@@ -123,42 +123,17 @@ jobs:
           cd ${{ github.event.inputs.DEVICE_PATH }}
           echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
-      - name: Generate Build Command
-        uses: haya14busa/action-cond@v1
-        id: build_cmd
-        with:
-          cond: ${{ github.event.inputs.MANIFEST_BRANCH == '11.0' || github.event.inputs.MANIFEST_BRANCH == '12.1' }}
-          if_true: "lunch twrp_${{ github.event.inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ github.event.inputs.BUILD_TARGET }}image"
-          if_false: "lunch omni_${{ github.event.inputs.DEVICE_NAME }}-eng && make clean && mka ${{ github.event.inputs.BUILD_TARGET }}image"
-
-      - name: Build OrangeFox
+      - name: Building OrangeFox
         run: |
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}
           set +e
-          cd ${FOX_BUILD_DIR} # 进入编译目录（核心修复）
-          sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go 2>/dev/null
           export USE_CCACHE=1
-          export CCACHE_EXEC=$(command -v ccache)
-          export ALLOW_MISSING_DEPENDENCIES=true
+          export CCACHE_EXEC=/usr/bin/ccache
+          sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
           source build/envsetup.sh
-          # 根据分支设置API级别
-          if [[ "${{ github.event.inputs.MANIFEST_BRANCH }}" == "12.1" ]]; then
-            export BOARD_SHIPPING_API_LEVEL=32
-            export PRODUCT_SHIPPING_API_LEVEL=32
-            export BOARD_SYSTEMSDK_VERSIONS=32
-            export PRODUCT_TARGET_VNDK_VERSION=32
-            echo "✅ 已设置 12.1 分支 API 级别为 32"
-          elif [[ "${{ github.event.inputs.MANIFEST_BRANCH }}" == "14.1" ]]; then
-            export BOARD_SHIPPING_API_LEVEL=35
-            export PRODUCT_SHIPPING_API_LEVEL=35
-            export BOARD_SYSTEMSDK_VERSIONS=35
-            export PRODUCT_TARGET_VNDK_VERSION=35
-            echo "✅ 已设置 14.1 分支 API 级别为 35"
-          else
-            echo "ℹ️  11.0 分支使用默认 API 级别"
-          fi
+          export ALLOW_MISSING_DEPENDENCIES=true
           set -e
-          # 执行前面生成的编译命令（修复冗余冲突）
-          ${{ steps.build_cmd.outputs.result }}
+          lunch twrp_${{ github.event.inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ github.event.inputs.BUILD_TARGET }}image
 
       
       - name: Set Release Properties
