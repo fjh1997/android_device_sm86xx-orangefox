@@ -140,6 +140,14 @@ TW_INCLUDE_FUSE_NTFS        := true
 TW_INCLUDE_NTFS_3G          := true
 TW_NO_EXFAT_FUSE            := true
 
+PRODUCT_PACKAGES += \
+    libbase \
+    libcutils \
+    libutils \
+    liblog \
+    libbinder \
+    libc++
+
 # Version
 PLATFORM_VERSION                := 99.87.36
 PLATFORM_VERSION_LAST_STABLE    := $(PLATFORM_VERSION)
