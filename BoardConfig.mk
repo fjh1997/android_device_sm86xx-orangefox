@@ -23,25 +23,6 @@ TARGET_ARCH_VARIANT         := armv8-a
 TARGET_CPU_ABI              := arm64-v8a
 TARGET_CPU_VARIANT          := kryo
 
-# 1. 核心libc++配置
-TARGET_CXX_STL := libc++_full
- TARGET_USES_LLVM_LIBCXX := true
- TARGET_LIBCXX_CFLAGS += -D_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS
- TARGET_LIBCXX_LDFLAGS += -Wl,--no-as-needed
-
-# 2. 必要共享库
-BOARD_VENDOR_RAMDISK_LIBRARIES += \
-    libc++.so \
-    libc++_shared.so \
-    libjson.so \
-    libperipheral_client.so \
-    libqsocket.so \
-    android.hardware.boot-V1-ndk.so \
-    libbinder_ndk.so 
-    
-TARGET_LD_LIBRARY_PATH += /vendor/lib64:/system/lib64
-
-TARGET_ENABLE_NDK := true
 
 # A/B
 AB_OTA_UPDATER := true

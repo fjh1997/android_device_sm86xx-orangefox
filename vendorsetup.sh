@@ -1,155 +1,112 @@
-#
-# Copyright (C) 2023 The Android Open Source Project
-# Copyright (C) 2023 SebaUbuntu's TWRP device tree generator
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-# 关于橙狐变量详见 fox_12.1/vendor/recovery/orangefox_build_vars.txt
-
-	export TW_DEFAULT_LANGUAGE="zh_CN"
-	export LC_ALL="C"
-	export ALLOW_MISSING_DEPENDENCIES=true
-
-	echo -e "\x1b[96melish: 开始添加OrangeFox Vars...\x1b[m"
-	## 构建信息
-	# 设置显示在关于页面里的维护人员名称
-	export OF_MAINTAINER=Nanya
-	# 设置版本号为日期
-	export FOX_MAINTAINER_PATCH_VERSION=$(date +%y%m%d)
-	# 当你需要标记出这个recovery是一个特殊版本时使用
-	#export FOX_VARIANT=A16
-
-	## 添加功能
-	# 使用完整版getprop命令
-	export FOX_REPLACE_TOOLBOX_GETPROP=1
-	# 支持tar命令
-	export FOX_USE_TAR_BINARY=1
-	# 支持sed命令
-	# export FOX_USE_SED_BINARY=1
-	# 支持lz4命令
-	export FOX_USE_LZ4_BINARY=1
-	# 支持zstd命令
-	export FOX_USE_ZSTD_BINARY=1
-	# 支持date命令
-	export FOX_USE_DATE_BINARY=1
-	# 使用bash代替sh和ash
-	export FOX_USE_BASH_SHELL=1
-	export FOX_ASH_IS_BASH=1
-	# 添加橙狐的app管理器功能
-	export FOX_ENABLE_APP_MANAGER=1
-	# 使用完整版grep命令
-	# export FOX_USE_GREP_BINARY=1
-	# 支持lzma, xz命令
-	export FOX_USE_XZ_UTILS=1
-	# 使用橙狐编译的NANO编辑器
-	# export FOX_USE_NANO_EDITOR=1
-	# 添加phhusson's lptools工具
-	export OF_ENABLE_LPTOOLS=1
-
-	## 添加橙狐特殊处理
-	# 设定recovery、system、vendor、boot分区路径
-	# export FOX_RECOVERY_INSTALL_PARTITION="/dev/block/bootdevice/by-name/recovery"
-	export FOX_RECOVERY_SYSTEM_PARTITION="/dev/block/mapper/system"
-	export FOX_RECOVERY_VENDOR_PARTITION="/dev/block/mapper/vendor"
-	# export FOX_RECOVERY_BOOT_PARTITION="/dev/block/bootdevice/by-name/boot"
-	# ramdisk使用lzma压缩
-	export OF_USE_LZMA_COMPRESSION=1
-
-	# 不生成recovery的zip刷机包
-	# export FOX_DISABLE_UPDATEZIP=1
-	# 跳过FBE解密流程（防止卡在橙狐LOGO或Redmi/Mi LOGO界面）
-	# export OF_SKIP_FBE_DECRYPTION=1
-	# 当ROM大于等于指定安卓SDK等级时，跳过FBE解密流程
-	# export OF_SKIP_FBE_DECRYPTION_SDKVERSION=31
-	# 防止橙狐在解密后重新运行自启动进程
-	export OF_NO_RELOAD_AFTER_DECRYPTION=1
-	# 禁用检查rom里的compatibility.zip
-	export OF_NO_TREBLE_COMPATIBILITY_CHECK=1
-	# 使用zip卡刷包的方式安装橙狐后不恢复橙狐的默认设置
-	export FOX_RESET_SETTINGS=disabled
-	# 删除zip包里的AromaFM（有的设备用不了）
-	export FOX_DELETE_AROMAFM=1
-
-	## 硬件功能设定
-	# 没有绿色led
-	export OF_USE_GREEN_LED=0
-	# 关闭闪光灯功能
-	export OF_FLASHLIGHT_ENABLE=0
-	# 自定义闪光灯路径，修复闪光灯
-	# export OF_FL_PATH1=/sys/class/leds/led:torch_0
-	# export OF_FL_PATH2=/sys/class/leds/led:torch_1
-	
-    # 启用橙狐 Data 解密（核心开关，必须添加）
-    export FOX_ENABLE_DATA_DECRYPTION=true
-    # 明确指定 FBE 加密类型（sm86xx 设备默认 FBE，补充后更稳妥）
-    export FOX_FBE_DECRYPTION=true
-
-
-	## 界面显示设定
-	# 设置屏幕高度，状态栏高度，状态栏左右边距
-	# 由于橙狐默认屏幕比例是16：9,所以应设置屏幕高度为屏幕比例换算成n：9之后，n*120
-	# export OF_SCREEN_H=2400
-	# 状态栏高度（默认72像素，刘海屏设备按需设置）
-	# export OF_STATUS_H=60
-	# 状态栏左右避让宽度（默认20像素，顶部圆角设备按需设置）
-	# export OF_STATUS_INDENT_LEFT=48
-	# export OF_STATUS_INDENT_RIGHT=48
-	# 添加黑色状态栏（隐藏刘海）选项
-	# export OF_HIDE_NOTCH=1
-	# 由于有刘海遮挡，设置时钟位置为只能显示在左侧或右侧
-	# export OF_CLOCK_POS=1
-	# 禁止禁用导航栏
-	export OF_ALLOW_DISABLE_NAVBAR=0
-
-	## 调整刷入zip刷机包时刷机脚本要检测的相关属性
-	# 设置一个很老的build时间，用于解决某些ROM例如MIUI刷机脚本里的防回滚保护检测
-	export FOX_BUGGED_AOSP_ARB_WORKAROUND="1546300800"; # Tuesday, January 1, 2019 12:00:00 AM GMT+00:00
-	# 使一加平板Pro和通用设备都能刷入橙狐zip卡刷包
-	export TARGET_DEVICE_ALT="caihong,sm86xx"
-	# 使橙狐可以刷入具有机型检测限制为小米平板5 Pro或者小米平板5 Pro 5G的zip卡刷包，与TARGET_OTA_ASSERT_DEVICE冲突
-	# export FOX_TARGET_DEVICES="caihong,sm86xx"
-
-	# 为“快速备份”指定默认选择的分区
-	export OF_QUICK_BACKUP_LIST="/boot;/data;"
-	# 将装载逻辑分区时的一些错误仅显示在日志里
-	export OF_IGNORE_LOGICAL_MOUNT_ERRORS=1
-	# 禁用橙狐内置的magisk菜单
-	# export FOX_DELETE_MAGISK_ADDON=1
-	# 使用指定的magisk
-	# export FOX_USE_SPECIFIC_MAGISK_ZIP="$HOME/Magisk.zip"
-	# 使用指定的magisk版本号，由于magisk 23+使用了新的包装形式，文件路径改变了，橙狐无法获取正确的版本
-	# export MAGISK_VER=26.1
-	# 使用新版的magiskboot(2024以后的版本，新设备可能需要，可能与修改启动图等功能冲突)
-	export FOX_USE_UPDATED_MAGISKBOOT=1
-	# 当修补recovery/boot镜像时，始终指示magiskboot v24+修补vbmeta标头（自动禁用avb验证？）
-	#export FOX_PATCH_VBMETA_FLAG=1
-	# 标记该设备肯定是原生Android 11+虚拟A/B（“VAB”）设备
-	export FOX_VIRTUAL_AB_DEVICE=1
-	# 指定super分区的完整大小，修复部分设备刷入miui rom失败，VAB设备专用变量
-	export OF_DYNAMIC_FULL_SIZE=14578294784
-	# 在修复或格式化f2fs数据分区之前自动卸载绑定/sdcard
-	export OF_UNBIND_SDCARD_F2FS=1
-	# 禁止把橙狐永久刷入vab设备，并且，禁止在安装 ROM 之后自动重刷橙狐
-	# export OF_NO_REFLASH_CURRENT_ORANGEFOX=1
-	# 标记该设备为recovery存在于vendor_boot分区中的设备（如k50之类的rec既不在boot分区里也没有独立rec分区的设备）
-	# export FOX_VENDOR_BOOT_RECOVERY=1
-	# 设置默认时区为北京时间
-	export OF_DEFAULT_TIMEZONE="TAIST-8;TAIDT"
-	# 支持通过修补vbmeta/vbmeta_system禁用avb2.0
-	export OF_SUPPORT_VBMETA_AVB2_PATCHING=1
-	# 在gui初始化的早期阶段加载主题和设置（包括语言设置）
-	export FOX_ALLOW_EARLY_SETTINGS_LOAD=1
-	# 安装压缩包页面选项的最大数量，调小这个值会显示滚动条（大于4小于9时生效，默认为4）
-	export OF_OPTIONS_LIST_NUM=11
-	# 跳过新版fstab处理
-	# export OF_FORCE_USE_RECOVERY_FSTAB=1
-	# 指定默认keymaster版本为4.0
-	export OF_DEFAULT_KEYMASTER_VERSION=4.0
-
-	#F=$(find "device" -maxdepth 2 -name "elish")
-	# 修改启动画面背景色为#000000
-	#\cp -fp bootable/recovery/gui/theme/portrait_hdpi/splash.xml "$F"/recovery/root/twres/splash.xml
-	#sed -i 's/value="#D34E38"/value="#000000"/g' "$F"/recovery/root/twres/splash.xml
-	#sed -i 's/value="#FF8038"/value="#000000"/g' "$F"/recovery/root/twres/splash.xml
-
-	echo -e "\x1b[96melish: 当你看到这个消息的时候，所有的OrangeFox Var已经添加完毕！\x1b[m"
+ 
+echo -e "\x1b[96mAdontoo: 开始加载OrangeFox配置变量...\x1b[m"
+ 
+#基础环境配置（合并核心变量，避免冲突）
+ 
+export TW_DEFAULT_LANGUAGE="zh_CN"  # 默认中文语言
+export LC_ALL="C"  # 统一字符编码，避免中文乱码
+export ALLOW_MISSING_DEPENDENCIES=true  # 允许缺失非核心依赖（兼容部分库缺失场景）
+export FOX_AB_DEVICE=1  # 标记为A/B分区设备
+export OF_AB_DEVICE_WITH_RECOVERY_PARTITION=1  # A/B设备且存在独立recovery分区
+export OF_USE_LZ4_COMPRESSION=1  # 使用LZ4压缩算法
+#export FOX_VANILLA_BUILD=1  # 纯净版构建（不含额外预装组件）
+#export OF_NO_MIUI_PATCH_WARNING=1  # 禁用MIUI补丁警告
+#export OF_DISABLE_MIUI_OTA_BY_DEFAULT=1  # 默认禁用MIUI OTA功能
+ 
+#设备相关配置（合并兼容设备列表，补充核心参数）
+ 
+export TARGET_DEVICE_ALT="PKG110,CPH2645,CPH2647,CPH2691,PJF110,CPH2661,PJX110,RMX3800,PJD110,PHY110,PHY120,CPH2573,OP5D2BL1,OP5D3BL1,OP5CFBL1,OP5E93L1,OP5D06L1,RE5C4FL1,OP5929L1,OP595DL1,OP565FL1,OP5660L1,OPD2404"  # 合并原有+新增兼容设备
+export FOX_VIRTUAL_AB_DEVICE=1  # 标记为虚拟A/B设备
+export OF_DYNAMIC_FULL_SIZE=14578294784  # 动态分区总大小（适配VAB设备）
+export FOX_VARIANT="OPLUS_PINEAPPLE"  # 设备变体（一加菠萝系列专属）
+export OF_FORCE_PREBUILT_KERNEL=1  # 强制使用预编译内核
+export OF_UNBIND_SDCARD_F2FS=1  # 格式化F2FS时解绑SD卡
+export OF_WIPE_METADATA_AFTER_DATAFORMAT=1  # 格式化数据后清除metadata分区
+export OF_FORCE_DATA_FORMAT_F2FS=1  # 强制将数据分区格式化为F2FS
+ 
+#补充分区路径配置
+ 
+export FOX_RECOVERY_SYSTEM_PARTITION="/dev/block/mapper/system"  # 系统分区路径
+export FOX_RECOVERY_VENDOR_PARTITION="/dev/block/mapper/vendor"  #  vendor分区路径
+ 
+#功能开关配置（保留原有+新增核心功能）
+ 
+export FOX_USE_TAR_BINARY=1  # 启用tar命令支持
+export FOX_USE_SED_BINARY=1  # 启用sed命令支持
+export FOX_USE_LZ4_BINARY=1  # 启用lz4命令支持
+export FOX_USE_ZSTD_BINARY=1  # 启用zstd命令支持
+export FOX_USE_DATE_BINARY=1  # 启用date命令支持
+export FOX_USE_GREP_BINARY=1  # 启用grep命令支持
+export FOX_USE_BUSYBOX_BINARY=1  # 启用busybox工具集
+export FOX_USE_XZ_UTILS=1  # 启用xz压缩工具
+export FOX_USE_FSCK_EROFS_BINARY=1  # 启用EROFS文件系统检查工具
+export FOX_USE_PATCHELF_BINARY=1  # 启用patchelf工具（修复库依赖）
+ 
+#新增功能变量
+ 
+export FOX_REPLACE_TOOLBOX_GETPROP=1  # 使用完整版getprop命令
+export FOX_USE_BASH_SHELL=1  # 使用bash代替sh和ash
+export FOX_ASH_IS_BASH=1  # 关联ash与bash
+#export FOX_ENABLE_APP_MANAGER=1  # 注释：按需启用橙狐应用管理器（纯净版默认关闭）
+ 
+#特殊处理配置
+ 
+export OF_TWRP_COMPATIBILITY_MODE=1  # 启用TWRP兼容模式
+export OF_NO_RELOAD_AFTER_DECRYPTION=1  # 解密后不重新加载进程
+export OF_NO_TREBLE_COMPATIBILITY_CHECK=1  # 禁用Treble兼容性检查
+#export FOX_DELETE_AROMAFM=1  # 删除AromaFM文件管理器（部分设备不兼容）
+export OF_ENABLE_LPTOOLS=1  # 启用逻辑分区工具
+export OF_ENABLE_ALL_PARTITION_TOOLS=1  # 启用所有分区管理工具
+export OF_ENABLE_FS_COMPRESSION=1  # 启用文件系统压缩
+export OF_DISPLAY_FORMAT_FILESYSTEMS_DEBUG_INFO=1  # 显示文件系统调试信息
+export FOX_ALLOW_EARLY_SETTINGS_LOAD=1  # 支持早期加载设置
+export FOX_SETTINGS_ROOT_DIRECTORY=/persist  # 设置配置文件存储路径
+export OF_USE_DMCTL=1  # 启用设备映射控制工具
+export OF_USE_AIDL_BOOT_CONTROL=1  # 启用AIDL模式的boot控制
+export FOX_RESET_SETTINGS=disabled  # 安装后不恢复默认设置
+export OF_IGNORE_LOGICAL_MOUNT_ERRORS=1  # 逻辑分区挂载错误仅日志显示
+export FOX_USE_UPDATED_MAGISKBOOT=1  # 使用新版magiskboot工具
+export OF_SUPPORT_VBMETA_AVB2_PATCHING=1  # 支持修补vbmeta禁用avb2.0
+ 
+#数据解密核心配置
+ 
+export FOX_ENABLE_DATA_DECRYPTION=true  # 启用数据解密功能
+export FOX_FBE_DECRYPTION=true  # 明确指定FBE加密类型（sm86xx设备适配）
+ 
+#硬件功能设定（原有+新增适配）
+ 
+export OF_USE_GREEN_LED=0  # 禁用绿色LED指示灯
+export OF_FLASHLIGHT_ENABLE=0  # 关闭闪光灯功能（按需启用）
+ 
+#界面与时区配置
+ 
+export OF_SCREEN_H=2400  # 屏幕高度（像素）
+export OF_STATUS_H=116  # 状态栏高度（像素）
+export OF_STATUS_INDENT_LEFT=30  # 状态栏左侧缩进（像素）
+export OF_STATUS_INDENT_RIGHT=30  # 状态栏右侧缩进（像素）
+export OF_HIDE_NOTCH=1  # 隐藏刘海屏区域
+export OF_ALLOW_DISABLE_NAVBAR=0  # 禁止禁用导航栏
+export OF_DEFAULT_TIMEZONE="TAIST-8;TAIDT"  # 设置默认时区为北京时间
+export OF_OPTIONS_LIST_NUM=6  # 安装选项列表最大数量（6个，超出显示滚动条）
+export OF_DEFAULT_KEYMASTER_VERSION=4.0  # 指定默认keymaster版本
+ 
+#刷机属性调整（新增适配功能）
+ 
+export FOX_BUGGED_AOSP_ARB_WORKAROUND="1546300800"  # 规避部分ROM防回滚检测（2019-01-01）
+export OF_QUICK_BACKUP_LIST="/boot;/data;"  # 快速备份默认分区（boot+data）
+ 
+#特殊处理与工具配置
+ 
+export FOX_MAINTAINER_PATCH_VERSION=$(date +%y%m%d)  # 维护者补丁版本（按日期生成）
+export OF_MAINTAINER="Nanya"  # 维护者名称
+#export FOX_MOVE_MAGISK_INSTALLER_TO_RAMDISK=1  # 将Magisk安装包移至内存盘
+#export OF_SKIP_FBE_DECRYPTION_SDKVERSION=32  # Android 12L及以上跳过FBE解密（避免卡LOGO）
+ 
+#启动画面修改（保持原有配置，注释冗余重复项）
+ 
+#F=$(find "device" -maxdepth 2 -name "sm86xx")
+#\cp -fp bootable/recovery/gui/theme/portrait_hdpi/splash.xml "$F"/recovery/root/twres/splash.xml
+#sed -i 's/value="#D34E38"/value="#000000"/g' "$F"/recovery/root/twres/splash.xml  # 替换橙色为黑色
+#sed -i 's/value="#FF8038"/value="#000000"/g' "$F"/recovery/root/twres/splash.xml  # 替换浅橙色为黑色
+ 
+echo -e "\x1b[96mAdontoo: 所有OrangeFox配置变量加载完毕！\x1b[m"
