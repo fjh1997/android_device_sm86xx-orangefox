@@ -1,0 +1,42 @@
+cc_library_shared {
+    name: "libinit_oplus_sm86xx",
+    srcs: ["libinit_oplus_sm86xx.cpp"],
+    
+    // 静态库依赖
+    static_libs: [
+        "libbase",
+        "libfs_mgr",
+        "libcutils",
+        "liblog",
+        "libpropertyutils"
+    ],
+    
+    // 共享库依赖
+    shared_libs: [
+        "libbase",
+        "libcutils", 
+        "liblog",
+        "libutils",
+        "libc++"
+    ],
+    
+    // 编译标志
+    cflags: [
+        "-Wall",
+        "-Werror",
+        "-Wno-unused-parameter",
+        "-DLOG_TAG=\"init_oplus\"",
+    ],
+    
+    // 恢复模式支持
+    recovery_available: true,
+    target: {
+        recovery: {
+            cflags: ["-DRECOVERY"],
+        },
+    },
+    
+    // 产品特定配置
+    product_specific: true,
+    vendor_available: true,
+}
