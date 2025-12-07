@@ -21,7 +21,7 @@
 
 	## 添加功能
 	# 使用完整版getprop命令
-	# export FOX_REPLACE_TOOLBOX_GETPROP=1
+	export FOX_REPLACE_TOOLBOX_GETPROP=1
 	# 支持tar命令
 	export FOX_USE_TAR_BINARY=1
 	# 支持sed命令
@@ -146,7 +146,7 @@
 	# 指定默认keymaster版本为4.0
 	export OF_DEFAULT_KEYMASTER_VERSION=4.0
 
-	F=$(find "device" -maxdepth 2 -name "elish")
+	#F=$(find "device" -maxdepth 2 -name "elish")
 	# 修改启动画面背景色为#000000
 	#\cp -fp bootable/recovery/gui/theme/portrait_hdpi/splash.xml "$F"/recovery/root/twres/splash.xml
 	#sed -i 's/value="#D34E38"/value="#000000"/g' "$F"/recovery/root/twres/splash.xml
