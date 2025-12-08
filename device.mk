@@ -47,7 +47,8 @@ PRODUCT_SOONG_NAMESPACES += $(DEVICE_PATH)
 
 LOCAL_STATIC_LIBRARIES := libfs_mgr liblog libbase libcutils libutils libc++
 PRODUCT_PACKAGES += libinit_oplus_sm86xx
-LOCAL_PATH := $(call my-dir)
- include $(CLEAR_VARS)
- LOCAL_MODULE := libinit_oplus_sm86xx
- LOCAL_SRC_FILES := libinit/libinit_oplus_sm86xx.cpp
+PRODUCT_SOONG_NAMESPACES += \
+    device/oplus/sm86xx/libinit
+SOONG_CONFIG_NAMESPACES += libinit_oplus_sm86xx
+ SOONG_CONFIG_libinit_oplus_sm86xx += source_path
+ SOONG_CONFIG_libinit_oplus_sm86xx_source_path := device/sm86xx-orangefox/libinit
