@@ -1,8 +1,23 @@
-//
-// Copyright (C) 2025 The Android Open Source Project
-//
-// SPDX-License-Identifier: Apache-2.0
-//
-
-soong_namespace {
+cc_library_static {
+    name: "libinit_oplus_sm86xx",
+    srcs: [
+        "libinit_oplus_sm86xx.cpp",
+    ],
+    cflags: [
+        "-Wall",
+        "-Wextra",
+        "-Wno-unused-parameter",
+    ],
+    // local_include_dirs 是相对于 Android.bp 所在目录
+    local_include_dirs: [
+        "libinit"
+    ],
+    shared_libs: [
+        "liblog",
+        "libutils",
+        "libhardware",
+        "libbase",
+        "libcutils",
+        "libc++",
+    ],
 }

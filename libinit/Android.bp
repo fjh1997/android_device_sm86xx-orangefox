@@ -1,24 +1,23 @@
-cc_library_static {  
+cc_library_static {
     name: "libinit_oplus_sm86xx",
-    srcs: ["libinit_oplus_sm86xx.cpp"],
+    srcs: [
+        "libinit_oplus_sm86xx.cpp",
+    ],
     cflags: [
         "-Wall",
         "-Wextra",
-        "-Wno-unused-parameter"
+        "-Wno-unused-parameter",
     ],
-    include_dirs: [
-        "device/sm86xx-orangefox/libinit",  
-        "system/core/init", 
-        "hardware/libhardware/include",
-        "system/core/base/include"
+    // local_include_dirs 是相对于 Android.bp 所在目录
+    local_include_dirs: [
+        "libinit"
     ],
-    // 链接必要的系统库，避免符号缺失
     shared_libs: [
         "liblog",
         "libutils",
         "libhardware",
         "libbase",
-        "libcutils", 
-        "libc++"
+        "libcutils",
+        "libc++",
     ],
 }
