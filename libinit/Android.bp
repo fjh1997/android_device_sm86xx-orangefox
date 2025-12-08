@@ -1,20 +1,18 @@
 cc_library_static {
     name: "libinit_oplus_sm86xx",
     srcs: [
-        "libinit_oplus_sm86xx.cpp",  // 同级源码文件，路径正确
+        "libinit_oplus_sm86xx.cpp",  
     ],
     cflags: [
         "-Wall",
         "-Wextra",
         "-Wno-unused-parameter",
     ],
-    // 改用 Soong 支持的绝对路径 Include（避免相对路径出错）
     local_include_dirs: [
-        "//system/core/init",
-        "//hardware/libhardware/include",
-        "//system/core/base/include",
+        "../../../../system/core/init",        
+        "../../../../hardware/libhardware/include",  
+        "../../../../system/core/base/include",
     ],
-    // 移除无效的 libinit 静态库依赖（若后续需要，需先定义该模块）
     static_libs: [],
     shared_libs: [
         "liblog",
@@ -25,13 +23,8 @@ cc_library_static {
         "libc++",
     ],
     stl: "c++_static",
-    // 正确的架构配置：Soong 自动适配 arm64 所有变体（含 arm64_armv8-a_kryo）
     arch: {
-        arm64: {
-            enabled: true,  
-        },
-        arm: {
-            enabled: false,  
-        },
+        arm64: { enabled: true },
+        arm: { enabled: false },
     },
 }
