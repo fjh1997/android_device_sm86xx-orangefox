@@ -42,13 +42,3 @@ PRODUCT_EXTRA_RECOVERY_KEYS += \
 	$(DEVICE_PATH)/security/local_OTA \
 	$(DEVICE_PATH)/security/special_OTA
 
-# Soong namespaces
-PRODUCT_SOONG_NAMESPACES += $(DEVICE_PATH)
-
-LOCAL_STATIC_LIBRARIES := libfs_mgr liblog libbase libcutils libutils libc++
-PRODUCT_PACKAGES += libinit_oplus_sm86xx
-PRODUCT_SOONG_NAMESPACES += \
-    device/oplus/sm86xx/libinit
-SOONG_CONFIG_NAMESPACES += libinit_oplus_sm86xx
- SOONG_CONFIG_libinit_oplus_sm86xx += source_path
- SOONG_CONFIG_libinit_oplus_sm86xx_source_path := device/sm86xx-orangefox/libinit

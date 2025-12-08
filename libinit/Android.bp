@@ -1,30 +1,8 @@
-cc_library_static {
-    name: "libinit_oplus_sm86xx",
-    srcs: [
-        "libinit_oplus_sm86xx.cpp",  
-    ],
-    cflags: [
-        "-Wall",
-        "-Wextra",
-        "-Wno-unused-parameter",
-    ],
-    local_include_dirs: [
-        "../../../../system/core/init",        
-        "../../../../hardware/libhardware/include",  
-        "../../../../system/core/base/include",
-    ],
-    static_libs: [],
-    shared_libs: [
-        "liblog",
-        "libutils",
-        "libhardware",
-        "libbase",
-        "libcutils",
-        "libc++",
-    ],
-    stl: "c++_static",
-    arch: {
-        arm64: { enabled: true },
-        arm: { enabled: false },
-    },
+//
+// Copyright (C) 2025 The Android Open Source Project
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+
+soong_namespace {
 }
