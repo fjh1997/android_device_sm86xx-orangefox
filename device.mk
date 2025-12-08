@@ -45,4 +45,4 @@ PRODUCT_EXTRA_RECOVERY_KEYS += \
 # Soong namespaces
 PRODUCT_SOONG_NAMESPACES += $(DEVICE_PATH)
 
-LOCAL_STATIC_LIBRARIES := libfs_mgr liblog libpropertyutils libbase libcutils libutils libc++
+LOCAL_STATIC_LIBRARIES := libfs_mgr liblog libbase libcutils libutils libc++

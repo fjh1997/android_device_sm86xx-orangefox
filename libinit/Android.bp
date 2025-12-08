@@ -7,6 +7,6 @@ cc_library_shared {
         "liblog",
         "libc++",  // <-- Comma added here
         "libfs_mgr",
-        "libpropertyutils"
+        "libutils"
     ]
 }
