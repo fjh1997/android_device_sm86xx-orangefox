@@ -17,12 +17,13 @@ TW_INCLUDE_OPPO_PARTITIONS := true
 
 # 备份时忽略ksu,apatch文件夹,避免错误
 TW_BACKUP_EXCLUSIONS := /data/adb/ap,/data/adb/ksu
+
 # Architecture
 TARGET_ARCH                 := arm64
 TARGET_ARCH_VARIANT         := armv8-a
 TARGET_CPU_ABI              := arm64-v8a
 TARGET_CPU_VARIANT          := kryo
-
+TARGET_IS_64_BIT := true
 
 # A/B
 AB_OTA_UPDATER := true

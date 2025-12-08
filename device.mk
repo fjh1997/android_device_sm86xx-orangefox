@@ -46,3 +46,8 @@ PRODUCT_EXTRA_RECOVERY_KEYS += \
 PRODUCT_SOONG_NAMESPACES += $(DEVICE_PATH)
 
 LOCAL_STATIC_LIBRARIES := libfs_mgr liblog libbase libcutils libutils libc++
+PRODUCT_PACKAGES += libinit_oplus_sm86xx
+LOCAL_PATH := $(call my-dir)
+ include $(CLEAR_VARS)
+ LOCAL_MODULE := libinit_oplus_sm86xx
+ LOCAL_SRC_FILES := libinit/libinit_oplus_sm86xx.cpp

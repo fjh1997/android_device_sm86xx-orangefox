@@ -47,7 +47,7 @@ export FOX_USE_PATCHELF_BINARY=1  # 启用patchelf工具（修复库依赖）
 export FOX_REPLACE_TOOLBOX_GETPROP=1  # 使用完整版getprop命令
 export FOX_USE_BASH_SHELL=1  # 使用bash代替sh和ash
 export FOX_ASH_IS_BASH=1  # 关联ash与bash
-#export FOX_ENABLE_APP_MANAGER=1  # 注释：按需启用橙狐应用管理器（纯净版默认关闭）
+export FOX_ENABLE_APP_MANAGER=1  # 注释：按需启用橙狐应用管理器（纯净版默认关闭）
  
 #特殊处理配置
  
