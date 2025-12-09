@@ -4,5 +4,18 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-soong_namespace {
+cc_library_static {
+    name: "libinit_oplus_sm86xx",
+    static_libs: [
+        "libbase",
+        "libfs_mgr"
+    ],
+    shared_libs: [
+        "libbase",
+        "libcutils", 
+        "libutils",
+        "libc++"
+    ],
+    srcs: ["libinit_oplus_sm86xx.cpp"],
+    recovery_available: true,
 }
