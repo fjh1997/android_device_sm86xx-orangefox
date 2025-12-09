@@ -11,7 +11,6 @@ cc_library_static {
         "libfs_mgr"
     ],
     shared_libs: [
-        "libbase",
         "libcutils", 
         "libutils",
         "libc++"
