@@ -9,8 +9,6 @@ cc_library_static {
     static_libs: [
         "libbase",
         "libfs_mgr",
-        "libcutils", 
-        "libutils",
         "libc++"
     ],
     srcs: ["libinit_oplus_sm86xx.cpp"],
