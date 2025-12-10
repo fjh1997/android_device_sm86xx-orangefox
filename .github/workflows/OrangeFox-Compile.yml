@@ -155,6 +155,8 @@ jobs:
         sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
+        # 设置环境变量跳过NOTICE检查，不用时注释
+        export SOONG_ALLOW_MISSING_DEPENDENCIES=true
         set -e
         lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
 
