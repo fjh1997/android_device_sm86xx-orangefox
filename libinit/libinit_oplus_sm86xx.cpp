@@ -1,8 +1,8 @@
-//
-// Copyright (C) 2025 The Android Open Source Project
-//
-// SPDX-License-Identifier: Apache-2.0
-//
+/*
+*  Copyright (C) 2025 The Android Open Source Project
+*
+*  SPDX-License-Identifier: Apache-2.0
+*/
 
 #include <android-base/logging.h>
 #include <android-base/parseint.h>
