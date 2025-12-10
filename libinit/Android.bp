@@ -8,9 +8,7 @@ cc_library_static {
     name: "libinit_oplus_sm86xx",
     static_libs: [
         "libbase",
-        "libfs_mgr"
-    ],
-    shared_libs: [
+        "libfs_mgr",
         "libcutils", 
         "libutils",
         "libc++"
