@@ -1,3 +1,9 @@
+#
+# Copyright (C) 2025 The Android Open Source Project
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
  OF_MAINTAINER := adontoo & nanya & good-name-awa
  
  #display for pad
