@@ -1,4 +1,8 @@
- 
+# Copyright (c) 2023 The Android Open Source Project
+# Copyright (C) 2023 SebaUbuntu's TWRP device tree generator 4-#
+# SPDX-License-Identifier: Apache-2.0
+#
+# 关于橙狐变量详见 fox_12.1/vendor/recovery/orangefox_build_vars.txt 
 echo -e "\x1b[96mAdontoo: 开始加载OrangeFox配置变量...\x1b[m"
  
 #基础环境配置（合并核心变量，避免冲突）
