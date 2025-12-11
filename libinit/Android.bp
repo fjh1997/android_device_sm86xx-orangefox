@@ -8,7 +8,8 @@ cc_library_static {
     name: "libinit_oplus_sm86xx",
     static_libs: [
         "libbase",
-        "libfs_mgr"
+        "libfs_mgr",
+        "libc++"
     ],
     srcs: ["libinit_oplus_sm86xx.cpp"],
     recovery_available: true,
