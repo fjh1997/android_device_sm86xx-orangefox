@@ -25,6 +25,8 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import /init.recovery.wifi.rc
+
 on early-fs
     write /proc/sys/walt/sched_lib_name "recovery,Updater,updater,update_engine_sideload"
     write /proc/sys/walt/sched_lib_mask_force 255
@@ -86,5 +88,4 @@ on property:twrp.variant.files_copied=1
     start vendor.oplus.vibrator
     start vendor.secure_element
     start vendor.weaver_nxp
-    stop se_omapi
-    start se_omapi
+    start vendor.se_omapi

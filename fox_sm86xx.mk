@@ -1,10 +1,10 @@
-#
-# Copyright (C) 2025 The Android Open Source Project
-#
+# Copyright (c) 2023 The Android Open Source Project
+# Copyright (C) 2023 SebaUbuntu's TWRP device tree generator 4-#
 # SPDX-License-Identifier: Apache-2.0
 #
+# 关于橙狐变量详见 fox_12.1/vendor/recovery/orangefox_build_vars.txt 
 
- OF_MAINTAINER := adontoo & nanya & good-name-awa
+ OF_MAINTAINER := nanya 
  
  #display for pad
  

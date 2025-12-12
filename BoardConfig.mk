@@ -12,18 +12,18 @@ BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES    := true
 BUILD_BROKEN_NINJA_USES_ENV_VARS    += RTIC_MPGEN
 BUILD_BROKEN_PLUGIN_VALIDATION      := soong-libaosprecovery_defaults soong-libguitwrp_defaults soong-libminuitwrp_defaults soong-vold_defaults
 
-# 在BoardConfig.mk中添加自定义分区支持
-TW_INCLUDE_OPPO_PARTITIONS := true
-
-# 备份时忽略ksu,apatch文件夹,避免错误
-TW_BACKUP_EXCLUSIONS := /data/adb/ap,/data/adb/ksu
-
 # Architecture
 TARGET_ARCH                 := arm64
 TARGET_ARCH_VARIANT         := armv8-a
 TARGET_CPU_ABI              := arm64-v8a
 TARGET_CPU_VARIANT          := kryo
 TARGET_IS_64_BIT := true
+
+# 在BoardConfig.mk中添加自定义分区支持
+TW_INCLUDE_OPPO_PARTITIONS := true
+
+# 备份时忽略ksu,apatch文件夹,避免错误
+TW_BACKUP_EXCLUSIONS := /data/adb/ap,/data/adb/ksu
 
 # A/B
 AB_OTA_UPDATER := true
@@ -99,11 +99,9 @@ BOARD_RECOVERYIMAGE_PARTITION_SIZE      := 0x6400000
 BOARD_SUPER_PARTITION_SIZE                  := 14578294784
 BOARD_SUPER_PARTITION_GROUPS                := qti_dynamic_partitions
 BOARD_QTI_DYNAMIC_PARTITIONS_SIZE           := 14574100480
+BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST := system system_dlkm system_ext product vendor vendor_dlkm odm odm_dlkm
+BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST += my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock
 
-BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST := system vendor product system_ext odm vendor_dlkm odm_dlkm
-	
-BOARD_DYNAMIC_PARTITIONS_PARTITION_LIST += my_bigball my_carrier my_company my_engineering my_heytap my_manifest my_preload my_product my_region my_stock
-	
 BOARD_ODMIMAGE_FILE_SYSTEM_TYPE := ext4
 TARGET_COPY_OUT_ODM             := odm
 TARGET_COPY_OUT_VENDOR          := vendor
@@ -141,7 +139,6 @@ TW_INCLUDE_FUSE_NTFS        := true
 TW_INCLUDE_NTFS_3G          := true
 TW_NO_EXFAT_FUSE            := true
 
-
 # Version
 PLATFORM_VERSION                := 99.87.36
 PLATFORM_VERSION_LAST_STABLE    := $(PLATFORM_VERSION)
@@ -166,4 +163,3 @@ TW_LOAD_VENDOR_MODULES_EXCLUDE_GKI      := true
 TW_NO_SCREEN_BLANK                      := true
 TW_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID  := true
 TW_ROTATION := 270
-
