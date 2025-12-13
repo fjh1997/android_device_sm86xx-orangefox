@@ -60,7 +60,8 @@ jobs:
     steps:
     - name: ℹ️ Show build info
       run: |
-        if  -n "${{ github.event.inputs.LUNCH_TARGET }}" ; then
+        # 修复shell语法错误：补充[]和修正空格
+        if [ -n "${{ github.event.inputs.LUNCH_TARGET }}" ]; then
           echo "LUNCH_TARGET=${{ github.event.inputs.LUNCH_TARGET }}" >> "$GITHUB_ENV"
         else
           echo "LUNCH_TARGET=${{ github.event.inputs.DEVICE_NAME }}" >> "$GITHUB_ENV"
@@ -104,7 +105,7 @@ jobs:
       run: |
         export DEBIAN_FRONTEND=noninteractive
         sudo apt update && sudo apt upgrade -y
-        sudo apt install repo -y
+        sudo apt install repo jq -y  # 安装jq（修复Magisk下载依赖）
         git config --global user.name ${{ github.actor }}
         git config --global user.email ${{ github.actor }}@users.noreply.github.com
 
@@ -113,7 +114,7 @@ jobs:
         repo init -u https://github.com/nebrassy/platform_manifest_twrp_aosp.git -b twrp-14 --depth=1
         (while true; do echo "Syncing source..."; sleep 60; done) &
         TIP_PID=$!
-        repo sync 2>&1 
+        repo sync
         kill $TIP_PID && exit 0
 
     - name: 🦊 Sync OFRP source
@@ -121,72 +122,89 @@ jobs:
         git clone https://gitlab.com/OrangeFox/sync.git -b master
         WORKINGDIR=$(pwd)
         cd sync
-        ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR 2>&1
+        ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
         cd $WORKINGDIR
         
     - name: 📦 Clone Android13+ Dependencies
       run: |
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-        sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/.repo/manifests/twrp-default.xml
-        sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/.repo/manifests/twrp-default.xml
-        mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp
-        repo sync 2>&1 
-        mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
+        # 确认源码目录路径正确性
+        cd $WORKINGDIR
+        sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' .repo/manifests/twrp-default.xml
+        sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' .repo/manifests/twrp-default.xml
+        mv bootable/recovery bootable/recovery-ofrp
+        repo sync
+        mv bootable/recovery-ofrp bootable/recovery
 
     - name: 🧩 Patching the Source Code
       run: |
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
-        git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 2>&1
+        cd $WORKINGDIR/bootable/recovery
+        git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9
 
-    - name: 📱 Setup device
+    - name: 📱 Setup device (修复路径)
       run: |
-        git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} device/${{ github.event.inputs.DEVICE_PATH }} 2>&1
+        # 克隆设备树到源码目录下的device路径
+        git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} \
+          $WORKINGDIR/device/${{ github.event.inputs.DEVICE_PATH }}
 
     - name: 🧩 Apply patches
       run: |
-        WORKINGDIR=$(pwd)
         cd $WORKINGDIR/bootable/recovery
-        git apply $WORKINGDIR/device/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch 2>&1 
+        # 正确引用设备树补丁路径
+        git apply $WORKINGDIR/device/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch
         cd $WORKINGDIR
-        git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd 2>&1 
+        git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd
         rm -rf bionic
-        git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic 2>&1 
+        git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic
     
     - name: 🔧 Clone OrangeFox Built-in Magisk
       run: |
-        git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt 2>&1 
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ github.event.inputs.DEVICE_TREE_BRANCH }}/device/${{ github.event.inputs.DEVICE_PATH }}
-        if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' vendorsetup.sh; then (echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk'>>vendorsetup.sh && echo "Added FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"); else sed -i 's/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/' vendorsetup.sh; fi 2>&1 
+        git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt
+        # 修复cd路径：使用MANIFEST_BRANCH而非DEVICE_TREE_BRANCH
+        cd $WORKINGDIR/device/${{ github.event.inputs.DEVICE_PATH }}
+        if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' vendorsetup.sh; then (echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk'>>vendorsetup.sh && echo "Added FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"); else sed -i 's/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/' vendorsetup.sh; fi
 
     - name: 🔄 Update OrangeFox Built-in magiskboot
       run: |
-        curl -L --retry 3 $(echo $(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true")  jq r '.0.assets  select(.name  test("Magisk.*\\.apk"))  .browser_download_url') o Magisk.apk 2>&1  
-        unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot 2>&1 
-        cp -f ~/magiskboot/lib/armeabi-v7a/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm/magiskboot_updated" 2>&1 
-        cp -f ~/magiskboot/lib/arm64-v8a/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm64/magiskboot_updated" 2>&1 
-        cp -f ~/magiskboot/lib/x86_64/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/tools/magiskboot" 2>&1 
+        # 修复jq命令语法，正确获取Magisk下载链接
+        curl -L --retry 3 $(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true" | jq -r '.[0].assets[] | select(.name | test("Magisk-.*\\.apk")) | .browser_download_url') -o Magisk.apk
+        unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot
+        cp -f ~/magiskboot/lib/armeabi-v7a/libmagiskboot.so "$WORKINGDIR/vendor/recovery/prebuilt/arm/magiskboot_updated"
+        cp -f ~/magiskboot/lib/arm64-v8a/libmagiskboot.so "$WORKINGDIR}/vendor/recovery/prebuilt/arm64/magiskboot_updated"
+        cp -f ~/magiskboot/lib/x86_64/libmagiskboot.so "$WORKINGDIR/vendor/recovery/tools/magiskboot"
 
-    - name: 🛠️ Build OFRP (with full log capture)
+    - name: 🛠️ Build OFRP 
       run: |
+        # 进入源码根目录执行编译（关键修复）
+        cd $WORKINGDIR
         set +e
-        source build/envsetup.sh 2>&1 
+        source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         export CCACHE_DIR=.ccache
-        sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go 2>&1 
+        sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
         export CCACHE_EXEC=$(command -v ccache)        
         export CCACHE_MAXSIZE=5G
         export USE_CCACHE=1
         set -e
-        lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image 2>&1 
+        lunch twrp_${{ env.LUNCH_TARGET }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image  # 使用LUNCH_TARGET环境变量
 
-    - name: 📤 Upload to Release 
+    - name: 📤 Upload to Release (修复产物路径)
       uses: softprops/action-gh-release@v2
       with:
         files: | 
-          out/target/product/${{ github.event.inputs.DEVICE_NAME }}/TWRP-3.7.1-16-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.img
-        name: TWRP-3.7.1-16-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+          # 修复产物路径：指向源码目录下的out文件夹
+          $WORKINGDIR/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-*.img
+        name: OrangeFox-${{ inputs.MANIFEST_BRANCH }}-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
         tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
-        body_path: device/${{ github.event.inputs.DEVICE_PATH }}/INFO.txt
+        body: |
+          ## 🦊 OrangeFox Recovery Build Release
+          
+          ### 📋 Build Info
+          ${{ env.BUILD_INFO }}
+          
+          ### ⚠️ Notes
+          - 基于OFRP ${{ inputs.MANIFEST_BRANCH }}分支构建
+          - 内置Magisk版本：${{ inputs.MAGISK_VERSION }}
+        # 修复INFO.txt路径（若存在），不存在则使用body替代
+        body_path: ${{ format('{0}/OrangeFox/fox_{1}/device/{2}/INFO.txt', github.workspace, inputs.MANIFEST_BRANCH, github.event.inputs.DEVICE_PATH) }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
