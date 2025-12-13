@@ -9,7 +9,6 @@ on:
         type: choice
         options:
         - 14.1
-        - 12.1
       DEVICE_TREE_URL:
         description: "📱 Device tree url"
         required: true
@@ -112,7 +111,7 @@ jobs:
 
     - name: 🔄 Sync TWRP source
       run: |
-        repo init -u https://github.com/nebrassy/platform_manifest_twrp_aosp.git -b twrp-${{ inputs.MANIFEST_BRANCH }} --depth=1
+        repo init -u https://github.com/nebrassy/platform_manifest_twrp_aosp.git -b twrp-14 --depth=1
         (while true; do echo "Syncing source..."; sleep 60; done) &
         TIP_PID=$!
         repo sync 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
