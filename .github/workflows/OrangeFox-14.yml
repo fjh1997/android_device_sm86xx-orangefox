@@ -1,10 +1,4 @@
-name: OrangeFox 12.1 - Build
-
-# Credits to:
-# https://github.com/TeamWin
-# https://gitlab.com/OrangeFox
-# https://github.com/azwhikaru for Recovery Builder Template
-# And all Contributors in every repositories I used
+name: OFRP 14.1 Builder
 
 on:
   workflow_dispatch:
@@ -12,27 +6,32 @@ on:
       MANIFEST_BRANCH:
         description: 'OrangeFox Manifest Branch'
         required: true
-        default: '12.1'
+        default: '14.1'
         type: choice
         options:
+        - 14.1
         - 12.1
-      DEVICE_TREE:
-        description: 'OrangeFox Device Tree'
+      DEVICE_TREE_URL:
+        description: "Device tree url"
         required: true
-        default: 'https://github.com/xccxxcys/OrangeFox-Recovery-Builder-2024'
+        default: "https://github.com/xccxxcys/OrangeFox-Recovery-Builder-2024"
       DEVICE_TREE_BRANCH:
-        description: 'OrangeFox Device Tree Branch'
+        description: "Device tree branch"
         required: true
-        default: 'OrangeFox'
+        default: "OrangeFox"
       DEVICE_PATH:
-        description: 'Specify your Device Path'
+        description: "Device path device/"
         required: true
-        default: 'device/oplus/sm86xx'
+        default: "oplus/sm86xx"
       DEVICE_NAME:
-        description: 'Specify your Device Codename'
+        description: "Device name"
         required: true
-        default: 'sm86xx'
-      BUILD_TARGET:
+        default: "sm86xx"
+      LUNCH_TARGET:
+        description: "lunch twrp_ (default same as device name)"
+        required: false
+        default: ""
+      BUILD_PARTITION:
         description: 'Specify your Build Target'
         required: true
         default: 'recovery'
@@ -55,34 +54,43 @@ on:
         type: boolean
         required: true
         default: true
-
 jobs:
   build:
-    name: Build OrangeFox by ${{ github.actor }}
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     permissions:
       contents: write
     steps:
-    - name: Checkout
-      uses: actions/checkout@v5
-              
-    - name: Clean-up
+    - name: Show build info
+      run: |
+        if [ -n "${{ github.event.inputs.LUNCH_TARGET }}" ]; then
+          echo "LUNCH_TARGET=${{ github.event.inputs.LUNCH_TARGET }}" >> "$GITHUB_ENV"
+        else
+          echo "LUNCH_TARGET=${{ github.event.inputs.DEVICE_NAME }}" >> "$GITHUB_ENV"
+        fi
+        {
+          echo 'BUILD_INFO<<EOF'
+          echo
+          echo Device tree url: ${{ github.event.inputs.DEVICE_TREE_URL }}
+          echo Device tree branch: ${{ github.event.inputs.DEVICE_TREE_BRANCH }}
+          echo Device path: ${{ github.event.inputs.DEVICE_PATH }}
+          echo Device name: ${{ github.event.inputs.DEVICE_NAME }}
+          echo Lunch target: ${{ github.event.inputs.LUNCH_TARGET }}
+          echo Build target: ${{ github.event.inputs.BUILD_PARTITION }}.img
+          echo Build date: `date`
+          echo
+          echo EOF
+        } >> "$GITHUB_ENV"
+        echo BUILD_DATE=`date +%F` >> "$GITHUB_ENV"
+
+    - name: Cleanup
       uses: rokibhasansagar/slimhub_actions@main
 
-    - name: Build Environment
-      run: |
-        sudo apt install aria2 -y
-        git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master
-        cd scripts
-        sudo bash setup/android_build_env.sh
+    - name: Maximize build space
+      uses: easimon/maximize-build-space@master
 
     - name: Setup ccache
       uses: hendrikmuhs/ccache-action@v1.2
-      if: inputs.USE_CCACHE
       with:
-        max-size: "5G"
         create-symlink: true
 
     - name: Setup zram
@@ -94,19 +102,32 @@ jobs:
         sudo systemctl restart zramswap
         zramctl
 
-    - name: Set-up Manifest
-      if: inputs.MANIFEST_BRANCH == '12.1'
+    - name: Setup environment
       run: |
-        mkdir -p ${GITHUB_WORKSPACE}/OrangeFox
-        cd ${GITHUB_WORKSPACE}/OrangeFox
-        git config --global user.name "${{ github.actor }}"
-        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-        git clone https://gitlab.com/OrangeFox/sync.git -b master
-        cd sync
-        ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt update && sudo apt upgrade -y
+        sudo apt install repo -y
+        git config --global user.name ${{ github.actor }}
+        git config --global user.email ${{ github.actor }}@users.noreply.github.com
 
-    - name: Clone Android13+ Dependencies For 12.1 Branch
-      if: inputs.MANIFEST_BRANCH == '12.1'
+    - name: Sync TWRP source
+      run: |
+        repo init -u https://github.com/nebrassy/platform_manifest_twrp_aosp.git -b twrp-${{ inputs.MANIFEST_BRANCH }} --depth=1
+        (while true; do echo "Syncing source..."; sleep 60; done) &
+        TIP_PID=$!
+        repo sync
+        kill $TIP_PID && exit 0
+
+    - name: Sync OFRP source
+      run: |
+        git clone https://gitlab.com/OrangeFox/sync.git -b master
+        WORKINGDIR=$(pwd)
+        cd sync
+        ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
+        cd $WORKINGDIR
+        
+    - name: Clone Android13+ Dependencies
+      if: inputs.MANIFEST_BRANCH == '14.1'
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/.repo/manifests/twrp-default.xml
@@ -116,18 +137,16 @@ jobs:
         mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
 
     - name: Patching the Source Code
-      if: inputs.MANIFEST_BRANCH == '12.1'
+      if: inputs.MANIFEST_BRANCH == '14.1'
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
         git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9
 
-    - name: Clone Device Tree
+
+    - name: Setup device
       run: |
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-        git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
-        cd ${{ inputs.DEVICE_PATH }}
-        echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
-    
+        git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} device/${{ github.event.inputs.DEVICE_PATH }}
+
     - name: Apply patches
       run: |
         WORKINGDIR=$(pwd)
@@ -137,8 +156,8 @@ jobs:
         git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd
         rm -rf bionic
         git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic
-
-    - name: Update OrangeFox Built-in Magisk
+    
+    - name: Clone OrangeFox Built-in Magisk
       run: |
         git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/${{ inputs.DEVICE_PATH }}
@@ -152,42 +171,41 @@ jobs:
         cp -f ~/magiskboot/lib/arm64-v8a/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm64/magiskboot_updated"
         cp -f ~/magiskboot/lib/x86_64/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/tools/magiskboot"
 
-    - name: Building OrangeFox
+    - name: Generate build info
       run: |
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        echo -e "$BUILD_INFO" >> INFO.txt
+        echo "Change log:" >> INFO.txt
         set +e
-        export FOX_BUILD_DEVICE=${{ inputs.DEVICE_NAME }}
-        export USE_CCACHE=1
-        export CCACHE_EXEC=/usr/bin/ccache
-        sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+        if [ $? -eq 0 ]; then
+          git log "$LAST_TAG"..HEAD --pretty=format:"- %h-%an: %s" >> INFO.txt
+        else
+          git log --pretty=format:"- %h-%an: %s" >> INFO.txt
+        fi
+        cat INFO.txt
+      working-directory: device/${{ github.event.inputs.DEVICE_PATH }}
+
+    - name: Build OFRP
+      run: |
+        set +e
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
-        # 设置环境变量跳过NOTICE检查，不用时注释
-        # export SOONG_ALLOW_MISSING_DEPENDENCIES=true
+        export CCACHE_DIR=.ccache
+        sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
+        export CCACHE_EXEC=$(command -v ccache)        
+        export CCACHE_MAXSIZE=5G
+        export USE_CCACHE=1
         set -e
         lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
 
-    - name: Set Release Properties
-      run: |
-        echo "BUILD_DATE=$(TZ=Asia/Shanghai date +%Y%m%d)" >> $GITHUB_ENV
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-
-        DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
-        if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
-          DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
-        fi
-        echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
 
     - name: Upload to Release
-      uses: softprops/action-gh-release@master
+      uses: softprops/action-gh-release@v2
       with:
-        files: |
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
-        tag_name: ${{ github.run_id }}
-        body: |
-          ## OrangeFox Recovery Build - Unofficial
-          Build: fox_${{ inputs.MANIFEST_BRANCH }}
-          Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
-          Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
+        files: | 
+          out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.img
+        name: OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+        tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
+        body_path: device/${{ github.event.inputs.DEVICE_PATH }}/INFO.txt
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
