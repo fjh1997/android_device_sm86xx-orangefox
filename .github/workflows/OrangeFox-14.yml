@@ -129,11 +129,12 @@ jobs:
       run: |
         # 确认源码目录路径正确性
         cd $WORKINGDIR
-        sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' .repo/manifests/twrp-default.xml
-        sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' .repo/manifests/twrp-default.xml
-        mv bootable/recovery bootable/recovery-ofrp
+        sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' $WORKINGDIR/.repo/manifests/twrp-default.xml
+        sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' $WORKINGDIR/.repo/manifests/twrp-default.xml
+        mv $WORKINGDIR/bootable/recovery $WORKINGDIR/bootable/recovery-ofrp
         repo sync
-        mv bootable/recovery-ofrp bootable/recovery
+        mv $WORKINGDIR/bootable/recovery-ofrp $WORKINGDIR/bootable/recovery
+
 
     - name: 🧩 Patching the Source Code
       run: |
