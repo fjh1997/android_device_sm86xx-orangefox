@@ -28,7 +28,7 @@ on:
       LUNCH_TARGET:
         description: "🍽️ lunch twrp_ (default same as device name)"
         required: false
-        default: ""
+        default: "sm86xx"
       BUILD_PARTITION:
         description: '🎯 Specify your Build Target'
         required: true
@@ -41,7 +41,7 @@ on:
       MAGISK_VERSION:
         description: '🔧 Specify your Magisk Version'
         required: true
-        default: 'Magisk'
+        default: 'MagiskAlpha'
         type: choice
         options:
         - Magisk
@@ -60,7 +60,7 @@ jobs:
     steps:
     - name: ℹ️ Show build info
       run: |
-        if [ -n "${{ github.event.inputs.LUNCH_TARGET }}" ]; then
+        if  -n "${{ github.event.inputs.LUNCH_TARGET }}" ; then
           echo "LUNCH_TARGET=${{ github.event.inputs.LUNCH_TARGET }}" >> "$GITHUB_ENV"
         else
           echo "LUNCH_TARGET=${{ github.event.inputs.DEVICE_NAME }}" >> "$GITHUB_ENV"
@@ -78,8 +78,7 @@ jobs:
           echo
           echo EOF
         } >> "$GITHUB_ENV"
-        echo BUILD_DATE=`date +%F` >> "$GITHUB_ENV"
-        echo BUILD_LOG_FILE="OrangeFox-Build-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.log" >> "$GITHUB_ENV"
+        echo BUILD_DATE=`date +%F` >> "$GITHUB_ENV"      
 
     - name: 🧹 Cleanup
       uses: rokibhasansagar/slimhub_actions@main
@@ -88,7 +87,6 @@ jobs:
       uses: easimon/maximize-build-space@master
 
     - name: ⚡ Setup ccache
-      if: ${{ github.event.inputs.USE_CCACHE == 'true' }}
       uses: hendrikmuhs/ccache-action@v1.2
       with:
         create-symlink: true
@@ -97,8 +95,8 @@ jobs:
       run: |
         sudo apt install linux-modules-extra-$(uname -r) zram-tools -y
         sudo modprobe zram
-        sudo sed -i 's/^#PERCENT=50/PERCENT=90/' /etc/default/zramswap
-        sudo sed -i 's/^#PRIORITY=100/PRIORITY=1000/' /etc/default/zramswap
+        sudo sed -i 's/^PERCENT=50/PERCENT=90/' /etc/default/zramswap
+        sudo sed -i 's/^PRIORITY=100/PRIORITY=1000/' /etc/default/zramswap
         sudo systemctl restart zramswap
         zramctl
 
@@ -115,184 +113,80 @@ jobs:
         repo init -u https://github.com/nebrassy/platform_manifest_twrp_aosp.git -b twrp-14 --depth=1
         (while true; do echo "Syncing source..."; sleep 60; done) &
         TIP_PID=$!
-        repo sync 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
+        repo sync 2>&1 
         kill $TIP_PID && exit 0
 
     - name: 🦊 Sync OFRP source
       run: |
-        # 首先检查是否已有OrangeFox目录
-        if [ -d "OrangeFox" ]; then
-          echo "OrangeFox directory already exists, skipping clone"
-        else
-          git clone https://gitlab.com/OrangeFox/sync.git -b master
-          WORKINGDIR=$(pwd)
-          cd sync
-          ./orangefox_sync.sh --branch ${{ github.event.inputs.MANIFEST_BRANCH }} --path $WORKINGDIR 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-          cd $WORKINGDIR
-        fi
+        git clone https://gitlab.com/OrangeFox/sync.git -b master
+        WORKINGDIR=$(pwd)
+        cd sync
+        ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR 2>&1
+        cd $WORKINGDIR
         
     - name: 📦 Clone Android13+ Dependencies
       run: |
-        # 检查OrangeFox目录是否存在
-        if [ ! -d "OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}" ]; then
-          echo "Error: OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }} directory not found!"
-          echo "Available directories:"
-          ls -la OrangeFox/
-          exit 1
-        fi
-        
-        cd OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}
-        sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' .repo/manifests/twrp-default.xml
-        sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' .repo/manifests/twrp-default.xml
-        if [ -d "bootable/recovery" ]; then
-          mv bootable/recovery bootable/recovery-ofrp
-        fi
-        repo sync 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-        if [ -d "bootable/recovery-ofrp" ]; then
-          mv bootable/recovery-ofrp bootable/recovery
-        fi
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/.repo/manifests/twrp-default.xml
+        sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/.repo/manifests/twrp-default.xml
+        mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp
+        repo sync 2>&1 
+        mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
 
     - name: 🧩 Patching the Source Code
       run: |
-        if [ -d "OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}/bootable/recovery" ]; then
-          cd OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}/bootable/recovery
-          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-        else
-          echo "Warning: bootable/recovery directory not found!"
-        fi
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
+        git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 2>&1
 
     - name: 📱 Setup device
       run: |
-        mkdir -p device
-        git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} device/${{ github.event.inputs.DEVICE_PATH }} 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
+        git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} device/${{ github.event.inputs.DEVICE_PATH }} 2>&1
 
     - name: 🧩 Apply patches
       run: |
         WORKINGDIR=$(pwd)
-        if [ -d "$WORKINGDIR/bootable/recovery" ]; then
-          cd $WORKINGDIR/bootable/recovery
-          if [ -d "$WORKINGDIR/device/${{ github.event.inputs.DEVICE_PATH }}/patches" ]; then
-            git apply $WORKINGDIR/device/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-          else
-            echo "No patches directory found, skipping patches"
-          fi
-        fi
+        cd $WORKINGDIR/bootable/recovery
+        git apply $WORKINGDIR/device/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch 2>&1 
         cd $WORKINGDIR
-        git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
+        git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd 2>&1 
         rm -rf bionic
-        git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
+        git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic 2>&1 
     
     - name: 🔧 Clone OrangeFox Built-in Magisk
       run: |
-        git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-        if [ -d "device/${{ github.event.inputs.DEVICE_PATH }}" ]; then
-          cd device/${{ github.event.inputs.DEVICE_PATH }}
-          if [ -f "vendorsetup.sh" ]; then
-            if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' vendorsetup.sh; then 
-              echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ github.event.inputs.MAGISK_VERSION }}.apk' >> vendorsetup.sh
-              echo "Added FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"
-            else 
-              sed -i 's|.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*|export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ github.event.inputs.MAGISK_VERSION }}.apk|' vendorsetup.sh
-            fi
-          fi
-        else
-          echo "Warning: device/${{ github.event.inputs.DEVICE_PATH }} not found!"
-        fi
-        2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
+        git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt 2>&1 
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ github.event.inputs.DEVICE_TREE_BRANCH }}/device/${{ github.event.inputs.DEVICE_PATH }}
+        if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' vendorsetup.sh; then (echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk'>>vendorsetup.sh && echo "Added FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"); else sed -i 's/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/' vendorsetup.sh; fi 2>&1 
 
     - name: 🔄 Update OrangeFox Built-in magiskboot
       run: |
-        # 检查OrangeFox目录是否存在
-        ORANGEFOX_DIR="OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}"
-        if [ ! -d "$ORANGEFOX_DIR" ]; then
-          echo "Warning: $ORANGEFOX_DIR not found, trying to find OrangeFox directory..."
-          if [ -d "fox_${{ github.event.inputs.MANIFEST_BRANCH }}" ]; then
-            ORANGEFOX_DIR="fox_${{ github.event.inputs.MANIFEST_BRANCH }}"
-          fi
-        fi
-        
-        mkdir -p ~/magiskboot
-        curl -L --retry 3 $(echo $(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true") | jq -r '.[0].assets[] | select(.name | test("Magisk-.*\\.apk")) | .browser_download_url') -o Magisk.apk 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-        unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-        
-        # 创建必要的目录
-        mkdir -p "$ORANGEFOX_DIR/vendor/recovery/prebuilt/arm"
-        mkdir -p "$ORANGEFOX_DIR/vendor/recovery/prebuilt/arm64"
-        mkdir -p "$ORANGEFOX_DIR/vendor/recovery/tools"
-        
-        cp -f ~/magiskboot/lib/armeabi-v7a/libmagiskboot.so "$ORANGEFOX_DIR/vendor/recovery/prebuilt/arm/magiskboot_updated" 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-        cp -f ~/magiskboot/lib/arm64-v8a/libmagiskboot.so "$ORANGEFOX_DIR/vendor/recovery/prebuilt/arm64/magiskboot_updated" 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-        cp -f ~/magiskboot/lib/x86_64/libmagiskboot.so "$ORANGEFOX_DIR/vendor/recovery/tools/magiskboot" 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-
-    - name: 📝 Generate build info
-      run: |
-        if [ -d "device/${{ github.event.inputs.DEVICE_PATH }}" ]; then
-          cd device/${{ github.event.inputs.DEVICE_PATH }}
-          echo -e "$BUILD_INFO" >> INFO.txt
-          echo "Change log:" >> INFO.txt
-          set +e
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
-          if [ $? -eq 0 ]; then
-            git log "$LAST_TAG"..HEAD --pretty=format:"- %h-%an: %s" >> INFO.txt
-          else
-            git log --pretty=format:"- %h-%an: %s" >> INFO.txt
-          fi
-          cat INFO.txt 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-        else
-          echo "Warning: device/${{ github.event.inputs.DEVICE_PATH }} not found, skipping build info"
-        fi
+        curl -L --retry 3 $(echo $(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true")  jq r '.0.assets  select(.name  test("Magisk.*\\.apk"))  .browser_download_url') o Magisk.apk 2>&1  
+        unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot 2>&1 
+        cp -f ~/magiskboot/lib/armeabi-v7a/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm/magiskboot_updated" 2>&1 
+        cp -f ~/magiskboot/lib/arm64-v8a/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm64/magiskboot_updated" 2>&1 
+        cp -f ~/magiskboot/lib/x86_64/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/tools/magiskboot" 2>&1 
 
     - name: 🛠️ Build OFRP (with full log capture)
       run: |
         set +e
-        # 确定正确的源目录
-        if [ -d "OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}/build" ]; then
-          cd OrangeFox/fox_${{ github.event.inputs.MANIFEST_BRANCH }}
-        elif [ -d "fox_${{ github.event.inputs.MANIFEST_BRANCH }}/build" ]; then
-          cd fox_${{ github.event.inputs.MANIFEST_BRANCH }}
-        else
-          echo "Error: Cannot find OrangeFox build directory!"
-          exit 1
-        fi
-        
-        source build/envsetup.sh 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
+        source build/envsetup.sh 2>&1 
         export ALLOW_MISSING_DEPENDENCIES=true
         export CCACHE_DIR=.ccache
-        sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
+        sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go 2>&1 
         export CCACHE_EXEC=$(command -v ccache)        
         export CCACHE_MAXSIZE=5G
-        export USE_CCACHE=${{ github.event.inputs.USE_CCACHE }}
+        export USE_CCACHE=1
         set -e
-        lunch twrp_${{ env.LUNCH_TARGET }}-eng && make clean && mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image 2>&1 | tee -a ${{ env.BUILD_LOG_FILE }}
-        
-        # 捕获构建结果信息并追加到日志
-        echo -e "\n===== Build Result Summary =====" >> ${{ env.BUILD_LOG_FILE }}
-        echo "Build Target: ${{ github.event.inputs.BUILD_PARTITION }}image" >> ${{ env.BUILD_LOG_FILE }}
-        echo "Build Status: Success" >> ${{ env.BUILD_LOG_FILE }}
-        echo "Build Date: ${{ env.BUILD_DATE }}" >> ${{ env.BUILD_LOG_FILE }}
-        echo "Output File: out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.img" >> ${{ env.BUILD_LOG_FILE }}
-        echo "=================================" >> ${{ env.BUILD_LOG_FILE }}
+        lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image 2>&1 
 
-    - name: 📋 Capture build failure log (if failed)
-      if: failure()
-      run: |
-        echo -e "\n===== Build Failed =====" >> ${{ env.BUILD_LOG_FILE }}
-        echo "Build failed at $(date)" >> ${{ env.BUILD_LOG_FILE }}
-        echo "Please check the log above for error details" >> ${{ env.BUILD_LOG_FILE }}
-        echo "=======================" >> ${{ env.BUILD_LOG_FILE }}
-
-    - name: 📤 Upload to Release (with build log)
+    - name: 📤 Upload to Release 
       uses: softprops/action-gh-release@v2
       with:
         files: | 
-          out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.img
-          ${{ env.BUILD_LOG_FILE }}
-        name: OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+          out/target/product/${{ github.event.inputs.DEVICE_NAME }}/TWRP-3.7.1-16-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.img
+        name: TWRP-3.7.1-16-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
         tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
-        body: |
-          ${{ env.BUILD_INFO }}
-          - Recovery Image (${{ github.event.inputs.BUILD_PARTITION }}.img)
-          - Full Build Log (${{ env.BUILD_LOG_FILE }})
         body_path: device/${{ github.event.inputs.DEVICE_PATH }}/INFO.txt
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
