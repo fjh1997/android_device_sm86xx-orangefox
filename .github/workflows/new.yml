@@ -80,13 +80,13 @@ jobs:
           remove-haskell: true
           remove-codeql: true
 
-      - name: 🌐 Setup Env
+      - name: 🌐 Setup environment
         run: |
-          sudo apt update && sudo apt install -y repo zram-tools jq patch linux-modules-extra-$(uname -r)
-          git clone https://gitlab.com/OrangeFox/misc/scripts.git
-          sudo bash scripts/setup/android_build_env.sh
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt update && sudo apt upgrade -y
+          sudo apt install repo -y
+          git config --global user.name ${{ github.actor }}
+          git config --global user.email ${{ github.actor }}@users.noreply.github.com
 
       - name: ⚡ ZRAM
         run: |
@@ -135,7 +135,7 @@ jobs:
           mv bootable/recovery-ofrp bootable/recovery
           # 应用14.1分支专属补丁
           cd bootable/recovery
-          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_14.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1补丁已合并或冲突，继续构建"
+          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1补丁已合并或冲突，继续构建"
 
       # 12.1分支：保持12.1版本补丁
       - name: 🧩 Fix 12.1 Branch Dependencies
