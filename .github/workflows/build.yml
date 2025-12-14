@@ -83,14 +83,14 @@ jobs:
           fi
           echo "LUNCH_TARGET=${LUNCH_TARGET}" >> "$GITHUB_ENV"
 
-          # 汇总构建信息到 BUILD_INFO 环境变量（多行）
+          # 汇总构建信息到 BUILD_INFO 环境变量（修复变量引用引号嵌套错误）
           cat >> "$GITHUB_ENV" <<'EOF'
           BUILD_INFO<<'BUILD_EOF'
          📱 Device Tree URL: ${{ github.event.inputs.DEVICE_TREE_URL }}
          🌿 Device Tree Branch: ${{ github.event.inputs.DEVICE_TREE_BRANCH }}
          📂 Device Path: device/${{ github.event.inputs.DEVICE_PATH }}
          🖥️ Device Name: ${{ github.event.inputs.DEVICE_NAME }}
-         🍽️ Lunch Target: '"${LUNCH_TARGET}"'
+         🍽️ Lunch Target: ${LUNCH_TARGET}
          🎯 Build Target: ${{ github.event.inputs.BUILD_PARTITION }}.img
          🔧 Magisk Version: ${{ github.event.inputs.MAGISK_VERSION }}
          🌿 Manifest Branch: ${{ github.event.inputs.MANIFEST_BRANCH }}
@@ -221,23 +221,24 @@ EOF
             echo "DEVICE_TREE_URL=${{ inputs.DEVICE_TREE_URL%.git }}" >> "$GITHUB_ENV"
           fi
 
-      # 应用设备树补丁
+      # 应用设备树补丁（修复补丁路径引号错误+依赖库克隆路径错误）
       - name: 🧩 Apply Device Patches
         run: |
           FOX_DIR="$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}"
           if [ -d "$FOX_DIR/bootable/recovery" ]; then
             cd "$FOX_DIR/bootable/recovery"
+            # 修复引号嵌套导致的补丁路径匹配失败
             if [ -d "$FOX_DIR/device/${{ inputs.DEVICE_PATH }}/patches" ]; then
-              git apply "$FOX_DIR/device/${{ inputs.DEVICE_PATH }}/patches"/*.patch || true
+              git apply "$FOX_DIR/device/${{ inputs.DEVICE_PATH }}/patches/*.patch" || true
             fi
           fi
 
-          # 补充依赖库
+          # 修复libmicrohttpd克隆路径错误（多写了bionic，且目录名错误）
           cd "$FOX_DIR" || true
-          git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrorf bionic || true
+          git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd || true
           git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic || true
 
-      # 配置内置Magisk
+      # 配置内置Magisk（修复变量名错误：MAG_VERSION → MAGISK_VERSION）
       - name: 🔧 Configure Built-in Magisk
         run: |
           FOX_DIR="$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}"
@@ -246,7 +247,8 @@ EOF
 
           if [ -f "$DEVICE_DIR/vendorsetup.sh" ]; then
             if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' "$DEVICE_DIR/vendorsetup.sh"; then
-              echo "export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAG_VERSION }}.apk" >> "$DEVICE_DIR/vendorsetup.sh"
+              # 修复变量错误：MAG_VERSION → MAGISK_VERSION
+              echo "export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk" >> "$DEVICE_DIR/vendorsetup.sh"
               echo "✅ Added FOX_USE_SPECIFIC_MAGISK_ZIP to vendorsetup.sh"
             else
               # 使用 @ 分隔符以避免路径中的斜杠冲突
@@ -288,7 +290,7 @@ EOF
             echo "WARN: Unable to find Magisk APK download URL"
           fi
 
-      # 构建OFRP
+      # 构建OFRP（修复Lunch Target冗余引用）
       - name: 🛠️ Build OrangeFox
         run: |
           FOX_DIR="$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}"
@@ -317,14 +319,9 @@ EOF
           ( while true; do echo "🛠️ Building OrangeFox... [$(date +'%H:%M:%S')] | Free Mem: $(free -h | awk '/Mem:/ {print $4}')"; sleep 30; done ) &
           TIP_PID=$!
 
-          # 初始化构建环境并编译
+          # 初始化构建环境并编译（修复Lunch Target冗余引用，直接使用环境变量）
           source build/envsetup.sh || true
-          # 使用在前面步骤写入的环境变量
-          lunch_target="${LUNCH_TARGET:-${{ github.event.inputs.LUNCH_TARGET }}}"
-          if [ -z "$lunch_target" ]; then
-            lunch_target="${{ inputs.DEVICE_NAME }}"
-          fi
-          lunch "twrp_${lunch_target}-eng" || true
+          lunch "twrp_${LUNCH_TARGET}-eng" || true
           make clean || true
           # 构建 adbd 和 指定分区镜像
           mka adbd "${BUILD_PARTITION}image" || true
