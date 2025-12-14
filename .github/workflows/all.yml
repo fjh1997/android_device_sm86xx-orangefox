@@ -1,4 +1,4 @@
-name: 🦊 OrangeFox Builder (14.1/12.1)
+name: 🦊 OFRP Builder(all)
 on:
   workflow_dispatch:
     inputs:
@@ -128,29 +128,24 @@ jobs:
       - name: 🧩 Fix 14.1 Branch Dependencies
         if: inputs.MANIFEST_BRANCH == '14.1'
         run: |
-          cd ${{ env.BUILD_DIR }}
-          mv bootable/recovery bootable/recovery-ofrp
-          repo sync -j$(nproc) --force-sync bootable/recovery
-          mv bootable/recovery-ofrp bootable/recovery
-          # 应用14.1分支专属补丁
-          cd bootable/recovery
-          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1补丁已合并或冲突，继续构建"
-
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+          mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp
+          repo sync
+          mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
+          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9
       # 12.1分支：保持12.1版本补丁
       - name: 🧩 Fix 12.1 Branch Dependencies
         if: inputs.MANIFEST_BRANCH == '12.1'
         run: |
-          cd ${{ env.BUILD_DIR }}
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
           sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' .repo/manifests/twrp-default.xml
           sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' .repo/manifests/twrp-default.xml
-          mv bootable/recovery bootable/recovery-ofrp
-          repo sync -j$(nproc) --force-sync bootable/recovery
-          mv bootable/recovery-ofrp bootable/recovery
-          # 应用12.1分支专属补丁
-          cd bootable/recovery
-          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 12.1补丁已合并或冲突，继续构建"
-
-      # 应用设备树补丁（按分支匹配）
+          mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp
+          repo sync
+          mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
+          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9      # 应用设备树补丁（按分支匹配）
       - name: 🔧 Apply Device Tree Patches
         run: |
           cd ${{ env.BUILD_DIR }}
