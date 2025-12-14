@@ -98,14 +98,13 @@ jobs:
       - name: 📥 Pull TWRP Source
         run: |
           if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
-            TWRP_REPO="https://github.com/nebrassy/platform_manifest_twrp_aosp.git"
+            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
             TWRP_BRANCH="twrp-14"
           else
             TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
             TWRP_BRANCH="twrp-12.1"
           fi
-          repo init --depth=1 -u $TWRP_REPO -b $TWRP_BRANCH
-          repo sync -j$(nproc) --force-sync --no-clone-bundle
+          repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
 
       - name: 📥 Run OrangeFox Sync
         run: |
