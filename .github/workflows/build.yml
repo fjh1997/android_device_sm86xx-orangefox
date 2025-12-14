@@ -60,7 +60,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: ℹ️ Show build info
+      - name: "ℹ️ Show build info"
         run: |
           if [ -n "${{ github.event.inputs.LUNCH_TARGET }}" ]; then
             echo "LUNCH_TARGET=${{ github.event.inputs.LUNCH_TARGET }}" >> "$GITHUB_ENV"
@@ -68,7 +68,7 @@ jobs:
             echo "LUNCH_TARGET=${{ github.event.inputs.DEVICE_NAME }}" >> "$GITHUB_ENV"
           fi
           {
-            echo 'BUILD_INFO<<EOF'
+            echo "BUILD_INFO<<EOF"
             echo
             echo "🌿 Manifest Branch: ${{ github.event.inputs.MANIFEST_BRANCH }}"
             echo "📱 Device tree url: ${{ github.event.inputs.DEVICE_TREE_URL }}"
@@ -85,59 +85,59 @@ jobs:
           } >> "$GITHUB_ENV"
           echo "BUILD_DATE=$(date +%F)" >> "$GITHUB_ENV"
 
-      - name: 🧹 Cleanup
+      - name: "🧹 Cleanup"
         uses: rokibhasansagar/slimhub_actions@main
 
-      - name: 💾 Maximize build space
+      - name: "💾 Maximize build space"
         uses: easimon/maximize-build-space@master
 
-      - name: ⚡ Setup ccache
+      - name: "⚡ Setup ccache"
         if: ${{ inputs.USE_CCACHE }}
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           create-symlink: true
 
-      - name: 🚀 Setup zram
+      - name: "🚀 Setup zram"
         run: |
           sudo apt install linux-modules-extra-$(uname -r) zram-tools -y
           sudo modprobe zram
-          sudo sed -i 's/^#PERCENT=50/PERCENT=90/' /etc/default/zramswap
-          sudo sed -i 's/^#PRIORITY=100/PRIORITY=1000/' /etc/default/zramswap
+          sudo sed -i "s/^#PERCENT=50/PERCENT=90/" /etc/default/zramswap
+          sudo sed -i "s/^#PRIORITY=100/PRIORITY=1000/" /etc/default/zramswap
           sudo systemctl restart zramswap
           zramctl
 
-      - name: 🌐 Setup environment
+      - name: "🌐 Setup environment"
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt update && sudo apt upgrade -y
           sudo apt install repo jq -y
-          git config --global user.name ${{ github.actor }}
-          git config --global user.email ${{ github.actor }}@users.noreply.github.com
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
       
-      - name: 🔄 Sync TWRP & OFRP source (14.1 Branch)
-        if: ${{ inputs.MANIFEST_BRANCH == '14.1' }}
+      - name: "🔄 Sync TWRP & OFRP source (14.1 Branch)"
+        if: ${{ inputs.MANIFEST_BRANCH == "14.1" }}
         run: |
-          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp -b twrp-14.1 --depth=1
+          repo init -u "https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git" -b twrp-14.1 --depth=1
           (while true; do echo "🔄 Syncing TWRP source..."; sleep 60; done) &
           TIP_PID=$!
           repo sync
           kill $TIP_PID && exit 0
-          git clone https://gitlab.com/OrangeFox/sync.git -b master
+          git clone "https://gitlab.com/OrangeFox/sync.git" -b master
           WORKINGDIR=$(pwd)
           cd sync
           ./orangefox_sync.sh --branch 14.1 --path $WORKINGDIR
           cd $WORKINGDIR
 
-      - name: 🔄 Sync OrangeFox source (12.1 Branch)
-        if: ${{ inputs.MANIFEST_BRANCH == '12.1' }}
+      - name: "🔄 Sync OrangeFox source (12.1 Branch)"
+        if: ${{ inputs.MANIFEST_BRANCH == "12.1" }}
         run: |
-          git clone https://gitlab.com/OrangeFox/sync.git -b master
+          git clone "https://gitlab.com/OrangeFox/sync.git" -b master
           WORKINGDIR=$(pwd)
           cd sync
           ./orangefox_sync.sh --branch 12.1 --path $WORKINGDIR
           cd $WORKINGDIR
-          sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' .repo/manifests/twrp-default.xml
-          sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' .repo/manifests/twrp-default.xml
+          sed -i "s/<project name=\"android_hardware_qcom_bootctrl\" path=\"hardware\/qcom-caf\/bootctrl\" remote=\"LineageOS\" revision=\"lineage-19.1-caf\" \/>/<project name=\"android_hardware_qcom_bootctrl\" path=\"hardware\/qcom-caf\/bootctrl\" remote=\"LineageOS\" revision=\"lineage-21.0-caf\" \/>/g" .repo/manifests/twrp-default.xml
+          sed -i "/<project path=\"bootable\/recovery\" name=\"android_bootable_recovery\" remote=\"TeamWin\" revision=\"android-12.1\"\/>/d" .repo/manifests/twrp-default.xml
           mv bootable/recovery bootable/recovery-ofrp
           (while true; do echo "🔄 Syncing 12.1 dependencies..."; sleep 60; done) &
           TIP_PID=$!
@@ -145,26 +145,26 @@ jobs:
           kill $TIP_PID && exit 0
           mv bootable/recovery-ofrp bootable/recovery
 
-      - name: 🧩 Patch Source Code (12.1 Branch)
-        if: ${{ inputs.MANIFEST_BRANCH == '12.1' }}
+      - name: "🧩 Patch Source Code (12.1 Branch)"
+        if: ${{ inputs.MANIFEST_BRANCH == "12.1" }}
         run: |
           cd bootable/recovery
-          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || true
+          git fetch "https://github.com/ymdzq/OrangeFox_Recovery" fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || true
 
-      - name: 🧩 Patch Source Code (14.1 Branch)
-        if: ${{ inputs.MANIFEST_BRANCH == '14.1' }}
+      - name: "🧩 Patch Source Code (14.1 Branch)"
+        if: ${{ inputs.MANIFEST_BRANCH == "14.1" }}
         run: |
           cd bootable/recovery
-          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_14.1 && git cherry-pick 36289fac..05b3e1b9 || true
+          git fetch "https://github.com/ymdzq/OrangeFox_Recovery" fox_14.1 && git cherry-pick 36289fac..05b3e1b9 || true
 
-      - name: 📱 Setup device
+      - name: "📱 Setup device"
         run: |
-          git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
+          git clone ${{ inputs.DEVICE_TREE_URL }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
           cd ${{ github.event.inputs.DEVICE_PATH }}
           echo "COMMIT_ID=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           echo "DEVICE_TREE_URL=${{ inputs.DEVICE_TREE_URL%.git }}" >> "$GITHUB_ENV"
 
-      - name: 🧩 Apply patches
+      - name: "🧩 Apply patches"
         run: |
           WORKINGDIR=$(pwd)
           cd $WORKINGDIR/bootable/recovery
@@ -173,25 +173,25 @@ jobs:
             git apply $WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch || true
           fi
           cd $WORKINGDIR
-          git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd
+          git clone "https://github.com/adontoo/android_external_libmicrohttpd" -b ofox-14.1 external/libmicrohttpd
           rm -rf bionic
-          git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic
+          git clone "https://github.com/adontoo/OrangeFox-android_platform_bionic" bionic
 
-      - name: 🔧 Configure Built-in Magisk
+      - name: "🔧 Configure Built-in Magisk"
         run: |
           DEVICE_DIR=${{ github.event.inputs.DEVICE_PATH }}
-          git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt
+          git clone "https://github.com/ymdzq/twrp_prebuilt" ~/twrp_prebuilt
           if [ -f "$DEVICE_DIR/vendorsetup.sh" ]; then
-            if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' $DEVICE_DIR/vendorsetup.sh; then
-              echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk' >> $DEVICE_DIR/vendorsetup.sh
+            if ! grep -q "FOX_USE_SPECIFIC_MAGISK_ZIP" $DEVICE_DIR/vendorsetup.sh; then
+              echo "export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk" >> $DEVICE_DIR/vendorsetup.sh
             else
-              sed -i 's/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/' $DEVICE_DIR/vendorsetup.sh
+              sed -i "s/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/" $DEVICE_DIR/vendorsetup.sh
             fi
           fi
 
-      - name: 🔄 Update Magiskboot 
+      - name: "🔄 Update Magiskboot"
         run: |
-          MAGISK_URL=$(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true" | jq -r '.[0].assets[] | select(.name | test("Magisk-.*\\.apk")) | .browser_download_url')
+          MAGISK_URL=$(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true" | jq -r ".[0].assets[] | select(.name | test(\"Magisk-.*\\.apk\")) | .browser_download_url")
           if [ -n "$MAGISK_URL" ]; then
             curl -L --retry 3 $MAGISK_URL -o Magisk.apk
             unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot
@@ -202,7 +202,7 @@ jobs:
             cp -f ~/magiskboot/lib/x86_64/libmagiskboot.so vendor/recovery/tools/magiskboot
           fi
 
-      - name: 📝 Generate build info
+      - name: "📝 Generate build info"
         run: |
           echo -e "$BUILD_INFO" >> INFO.txt
           echo "📜 Change log:" >> INFO.txt
@@ -216,7 +216,7 @@ jobs:
           cat INFO.txt
         working-directory: ${{ github.event.inputs.DEVICE_PATH }}
 
-      - name: 🛠️ Build OFRP
+      - name: "🛠️ Build OFRP"
         run: |
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
@@ -225,7 +225,7 @@ jobs:
           export CCACHE_MAXSIZE=5G
           export USE_CCACHE=${{ inputs.USE_CCACHE && 1 || 0 }}
           # 还原Lunch目标为 TWRP 标准格式：twrp_${目标}-eng
-          lunch twrp_${{ env.LUNCH_TARGET }}-eng
+          lunch "twrp_${{ env.LUNCH_TARGET }}-eng"
           (while true; do echo "🛠️ [$(date +%T)] Building OFRP... | Free Mem: $(free -h | awk '/Mem:/ {print $4}')"; sleep 10; done) &
           TIP_PID=$!
           mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
@@ -236,13 +236,13 @@ jobs:
           fi
           kill $TIP_PID && exit 0
 
-      - name: 📤 Upload to Release
+      - name: "📤 Upload to Release"
         uses: softprops/action-gh-release@v2
         with:
           files: | 
             out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}.img
-          name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
-          tag_name: ${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+          name: "🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}-${{ github.run_id }}"
+          tag_name: "${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}-${{ github.run_id }}"
           body: |
             ## 🦊 OrangeFox Recovery Unofficial Release
             ${{ env.BUILD_INFO }}
