@@ -24,9 +24,9 @@ $(call inherit-product, $(LOCAL_PATH)/fox_sm86xx.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/gsi_keys.mk)
 
 # Shipping API level
-BOARD_SHIPPING_API_LEVEL    := 32
-PRODUCT_SHIPPING_API_LEVEL  := 32
-PRODUCT_TARGET_VNDK_VERSION := 32
+BOARD_SHIPPING_API_LEVEL    := 34
+PRODUCT_SHIPPING_API_LEVEL  := 34
+PRODUCT_TARGET_VNDK_VERSION := 34
 
 # Dynamic partitions
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
