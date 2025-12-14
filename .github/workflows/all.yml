@@ -121,7 +121,7 @@ jobs:
           git clone https://gitlab.com/OrangeFox/sync.git -b master
           chmod +x sync/orangefox_sync.sh
           cd sync
-          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${{ env.BUILD_DIR }} --ssh 0
+          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${{ env.BUILD_DIR }} 
 
       # 14.1分支：使用14.1版本补丁
       - name: 🧩 Fix 14.1 Branch Dependencies

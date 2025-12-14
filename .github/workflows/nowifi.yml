@@ -111,7 +111,7 @@ jobs:
           git clone https://gitlab.com/OrangeFox/sync.git -b master
           chmod +x sync/orangefox_sync.sh
           cd sync
-          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${{ env.BUILD_DIR }} --ssh 0
+          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${{ env.BUILD_DIR }} 
           
       - name: 🧩 Patch 12.1 Branch
         if: inputs.MANIFEST_BRANCH == '12.1'
