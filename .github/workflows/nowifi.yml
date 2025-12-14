@@ -102,7 +102,7 @@ jobs:
       - name: 📥 Pull TWRP Source
         run: |
           if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
-            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
+            TWRP_REPO="https://github.com/nebrassy/platform_manifest_twrp_aosp.git"
             TWRP_BRANCH="twrp-14"
           else
             TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"

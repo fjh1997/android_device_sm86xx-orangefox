@@ -9,7 +9,6 @@ on:
         type: choice
         options:
           - 14.1
-          - 12.1
       DEVICE_TREE:
         description: "📱 Device Tree URL"
         required: true
@@ -104,13 +103,8 @@ jobs:
       # 第一步：纯拉TWRP源码，不碰任何sync脚本
       - name: 📥 Pull TWRP Source
         run: |
-          if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
-            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
-            TWRP_BRANCH="twrp-14"
-          else
-            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
-            TWRP_BRANCH="twrp-12.1"
-          fi
+            TWRP_REPO="https://github.com/nebrassy/platform_manifest_twrp_aosp.git"
+            TWRP_BRANCH="twrp-14"         
           repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
 
       # 第二步：执行橙狐sync脚本，不改动任何参数/逻辑
