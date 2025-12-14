@@ -88,20 +88,21 @@ jobs:
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
 
-      - name: ⚡ ZRAM
-        run: |
-          sudo modprobe zram
-          sudo sed -i 's/#PERCENT=50/PERCENT=90/' /etc/default/zramswap
-          sudo systemctl restart zramswap
-          zramctl
-
-      - name: ⚡ CCACHE
+      - name: ⚡ Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         if: inputs.USE_CCACHE
         with:
           max-size: "5G"
-          cache-path: ${{ env.BUILD_DIR }}/.ccache
+          create-symlink: true
 
+      - name: 🚀 Setup zram
+        run: |
+          sudo apt install linux-modules-extra-$(uname -r) zram-tools -y
+          sudo modprobe zram
+          sudo sed -i 's/^#PERCENT=50/PERCENT=90/' /etc/default/zramswap
+          sudo sed -i 's/^#PRIORITY=100/PRIORITY=1000/' /etc/default/zramswap
+          sudo systemctl restart zramswap
+          
       # 第一步：纯拉TWRP源码，不碰任何sync脚本
       - name: 📥 Pull TWRP Source
         run: |
