@@ -226,39 +226,21 @@ jobs:
           cd ${{ env.BUILD_DIR }}
           export FOX_BUILD_DEVICE=${{ inputs.DEVICE_NAME }}
           export ALLOW_MISSING_DEPENDENCIES=true
-          export LC_ALL="C"
-          # 启用CCACHE
           if [ ${{ inputs.USE_CCACHE }} = true ]; then
             export USE_CCACHE=1
             export CCACHE_EXEC=/usr/bin/ccache
             export CCACHE_MAXSIZE=5G
             sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
-          fi
-          # 编译状态输出
-          (while true; do
-            echo "⏱️ [$(TZ=Asia/Shanghai date +%H:%M:%S)] Building ${{ env.FOX_VERSION }}... | Free Mem: $(free -h | awk '/Mem:/ {print $4}')"
-            sleep 10
-          done) &
-          TIP_PID=$!
-          # 开始编译
+          fi          
           source build/envsetup.sh
-          lunch twrp_${{ env.LUNCH_TARGET }}-eng
-          make clean
-          mka adbd ${{ inputs.BUILD_PARTITION }}image
-          kill $TIP_PID
-          # 重命名产物
-          OUT_DIR="out/target/product/${{ inputs.DEVICE_NAME }}"
-          SOURCE_FILE="${OUT_DIR}/${{ inputs.BUILD_PARTITION }}.img"
-          TARGET_FILE="${OUT_DIR}/OrangeFox-${{ env.FOX_VERSION }}-${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img"
-          mv $SOURCE_FILE $TARGET_FILE
-          echo "✅ Build completed: $(basename $TARGET_FILE)"
+          lunch twrp_${{ inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ inputs.BUILD_TARGET }}image
 
       - name: 📤 Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ${{ env.BUILD_DIR }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox-${{ env.FOX_VERSION }}-${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img
-            ${{ env.BUILD_DIR }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
+            OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
+            OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
           name: 🦊 OrangeFox-${{ env.FOX_VERSION }}-${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}
           tag_name: ${{ inputs.DEVICE_NAME }}-${{ env.FOX_VERSION }}-${{ env.BUILD_DATE }}
           body: |

@@ -95,32 +95,28 @@ jobs:
           sudo systemctl restart zramswap
           zramctl
 
-      - name: 🔄 Sync OFRP source 14.1
-        if: inputs.MANIFEST_BRANCH == '14.1'
+      - name: 📥 Pull TWRP Source
         run: |
-          mkdir -p ${GITHUB_WORKSPACE}/OrangeFox
-          cd ${GITHUB_WORKSPACE}/OrangeFox
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp -b twrp-14 --depth=1
-          git clone https://gitlab.com/OrangeFox/sync.git -b master
-          WORKINGDIR=$(pwd)
-          cd sync
-          ./orangefox_sync.sh --branch 14.1 --path $WORKINGDIR
-          cd $WORKINGDIR
+          mkdir -p ${{ env.BUILD_DIR }}
+          cd ${{ env.BUILD_DIR }}
+          if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
+            TWRP_REPO="https://github.com/nebrassy/platform_manifest_twrp_aosp.git"
+            TWRP_BRANCH="twrp-14"
+          else
+            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
+            TWRP_BRANCH="twrp-12.1"
+          fi
+          repo init --depth=1 -u $TWRP_REPO -b $TWRP_BRANCH
+          repo sync -j$(nproc) --force-sync --no-clone-bundle
 
-      - name: 🔄 Sync OFRP source 12.1
-        if: inputs.MANIFEST_BRANCH == '12.1'
+      - name: 📥 Run OrangeFox Sync
         run: |
-          mkdir -p ${GITHUB_WORKSPACE}/OrangeFox
-          cd ${GITHUB_WORKSPACE}/OrangeFox
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
           git clone https://gitlab.com/OrangeFox/sync.git -b master
+          chmod +x sync/orangefox_sync.sh
           cd sync
-          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-
-      - name: 🧩 Clone Android13+ Dependencies For 12.1 Branch
+          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${{ env.BUILD_DIR }} --ssh 0
+          
+      - name: 🧩 Patch 12.1 Branch
         if: inputs.MANIFEST_BRANCH == '12.1'
         run: |
           cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
@@ -129,27 +125,19 @@ jobs:
           mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp
           repo sync
           mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
-
-      - name: 🧩 Clone Android13+ Dependencies For 14.1 Branch
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
+          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9
+          
+      - name: 🧩 Patch 14.1 Branch
         if: inputs.MANIFEST_BRANCH == '14.1'
         run: |
           cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
           mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp
           repo sync
           mv ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery-ofrp ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
-
-      - name: 🧩 Patching the Source Code (12.1)
-        if: inputs.MANIFEST_BRANCH == '12.1'
-        run: |
-          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
-          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9
-
-      - name: 🧩 Patching the Source Code (14.1)
-        if: inputs.MANIFEST_BRANCH == '14.1'
-        run: |
           cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/bootable/recovery
           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_14.1 && git cherry-pick 36289fac..05b3e1b9
-
+          
       - name: 📥 Clone Device Tree
         run: |
           cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
@@ -176,7 +164,6 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
           set +e
-          export FOX_BUILD_DEVICE=${{ inputs.DEVICE_NAME }}
           if [[ ${{ inputs.USE_CCACHE }} == true ]]; then
           export USE_CCACHE=1
           export CCACHE_EXEC=/usr/bin/ccache
