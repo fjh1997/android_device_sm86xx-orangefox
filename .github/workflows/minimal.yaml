@@ -63,12 +63,13 @@ jobs:
       - name: 🧹 Cleanup
         uses: rokibhasansagar/slimhub_actions@main
 
-      - name: 💾 Maximize build space
+      - name: 💾 Max Space
         uses: easimon/maximize-build-space@master
 
       - name: ⚡ Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
+          max-size: "5G"
           create-symlink: true
 
       - name: 🚀 Setup zram
@@ -79,7 +80,7 @@ jobs:
           sudo sed -i 's/^#PRIORITY=100/PRIORITY=1000/' /etc/default/zramswap
           sudo systemctl restart zramswap
           zramctl
-
+          
       - name: 🌐 Setup environment
         run: |
           export DEBIAN_FRONTEND=noninteractive
@@ -87,6 +88,7 @@ jobs:
           sudo apt install repo -y
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
+
 
       - name: 🔄 Sync TWRP source
         run: |

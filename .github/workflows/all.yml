@@ -68,26 +68,15 @@ jobs:
           echo "LUNCH_TARGET=$LUNCH" >> $GITHUB_ENV
           echo "BUILD_DATE=$(TZ=Asia/Shanghai date +%Y%m%d)" >> $GITHUB_ENV
           echo "FOX_VERSION=R11.3_${{ inputs.MANIFEST_BRANCH }}" >> $GITHUB_ENV
-
+      - name: ✅ Checkout
+        uses: actions/checkout@v5
+        
       - name: 🧹 Clean
         uses: rokibhasansagar/slimhub_actions@main
 
       - name: 💾 Max Space
         uses: easimon/maximize-build-space@master
-        with:
-          remove-dotnet: true
-          remove-android: true
-          remove-haskell: true
-          remove-codeql: true
-
-      - name: 🌐 Setup environment
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt update && sudo apt upgrade -y
-          sudo apt install repo -y
-          git config --global user.name ${{ github.actor }}
-          git config --global user.email ${{ github.actor }}@users.noreply.github.com
-
+       
       - name: ⚡ Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
         if: inputs.USE_CCACHE
@@ -102,6 +91,15 @@ jobs:
           sudo sed -i 's/^#PERCENT=50/PERCENT=90/' /etc/default/zramswap
           sudo sed -i 's/^#PRIORITY=100/PRIORITY=1000/' /etc/default/zramswap
           sudo systemctl restart zramswap
+          zramctl
+          
+      - name: 🌐 Setup environment
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt update && sudo apt upgrade -y
+          sudo apt install repo -y
+          git config --global user.name ${{ github.actor }}
+          git config --global user.email ${{ github.actor }}@users.noreply.github.com
           
       # 第一步：纯拉TWRP源码，不碰任何sync脚本
       - name: 📥 Pull TWRP Source
