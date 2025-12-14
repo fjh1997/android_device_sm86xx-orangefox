@@ -19,7 +19,7 @@ on:
         required: true
         default: "OrangeFox"
       DEVICE_PATH:
-        description: "📂 Device path (device/...)"
+        description: "📂 Device path device/"
         required: true
         default: "device/oplus/sm86xx"
       DEVICE_NAME:
@@ -27,7 +27,7 @@ on:
         required: true
         default: "sm86xx"
       LUNCH_TARGET:
-        description: "🍽️ Lunch target (twrp_xxx-eng, default same as device name)"
+        description: "🍽️ lunch twrp_ (default same as device name)"
         required: false
         default: "sm86xx"
       BUILD_PARTITION:
@@ -60,15 +60,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: "ℹ️ Show build info"
+      - name: ℹ️ Show build info
         run: |
-          # 处理 Lunch Target 默认为设备名
           if [ -n "${{ github.event.inputs.LUNCH_TARGET }}" ]; then
             echo "LUNCH_TARGET=${{ github.event.inputs.LUNCH_TARGET }}" >> "$GITHUB_ENV"
           else
             echo "LUNCH_TARGET=${{ github.event.inputs.DEVICE_NAME }}" >> "$GITHUB_ENV"
           fi
-          # 输出构建信息到环境变量
           {
             echo "BUILD_INFO<<EOF"
             echo
@@ -85,22 +83,21 @@ jobs:
             echo
             echo EOF
           } >> "$GITHUB_ENV"
-          # 记录构建日期（格式：YYYY-MM-DD）
           echo "BUILD_DATE=$(date +%F)" >> "$GITHUB_ENV"
 
-      - name: "🧹 Cleanup workspace"
+      - name: 🧹 Cleanup
         uses: rokibhasansagar/slimhub_actions@main
 
-      - name: "💾 Maximize build space"
+      - name: 💾 Maximize build space
         uses: easimon/maximize-build-space@master
 
-      - name: "⚡ Setup ccache"
+      - name: ⚡ Setup ccache
         if: ${{ inputs.USE_CCACHE }}
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           create-symlink: true
 
-      - name: "🚀 Setup zram (90% RAM)"
+      - name: 🚀 Setup zram
         run: |
           sudo apt install linux-modules-extra-$(uname -r) zram-tools -y
           sudo modprobe zram
@@ -109,100 +106,82 @@ jobs:
           sudo systemctl restart zramswap
           zramctl
 
-      - name: "🌐 Setup build environment"
+      - name: 🌐 Setup environment
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt update && sudo apt upgrade -y
           sudo apt install repo jq -y
-          # 配置 Git 身份
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
       
-      - name: "🔄 Sync TWRP & OFRP source (14.1 Branch)"
-        if: ${{ inputs.MANIFEST_BRANCH == '14.1' }}
+      - name: 🔄 Sync TWRP & OFRP source (14.1 Branch)
+        if: ${{ inputs.MANIFEST_BRANCH == "14.1" }}
         run: |
-          # 初始化 TWRP 14.1 源码
-          repo init -u "https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git" -b twrp-14.1 --depth=1
-          # 后台输出同步进度（每60秒一次）
+          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-14.1 --depth=1
           (while true; do echo "🔄 Syncing TWRP source..."; sleep 60; done) &
           TIP_PID=$!
           repo sync
           kill $TIP_PID && exit 0
-          # 同步 OrangeFox 14.1 源码
-          git clone "https://gitlab.com/OrangeFox/sync.git" -b master
+          git clone https://gitlab.com/OrangeFox/sync.git -b master
           WORKINGDIR=$(pwd)
           cd sync
           ./orangefox_sync.sh --branch 14.1 --path $WORKINGDIR
           cd $WORKINGDIR
 
-      - name: "🔄 Sync OrangeFox source (12.1 Branch)"
-        if: ${{ inputs.MANIFEST_BRANCH == '12.1' }}
+      - name: 🔄 Sync OrangeFox source (12.1 Branch)
+        if: ${{ inputs.MANIFEST_BRANCH == "12.1" }}
         run: |
-          # 同步 OrangeFox 12.1 源码
-          git clone "https://gitlab.com/OrangeFox/sync.git" -b master
+          git clone https://gitlab.com/OrangeFox/sync.git -b master
           WORKINGDIR=$(pwd)
           cd sync
           ./orangefox_sync.sh --branch 12.1 --path $WORKINGDIR
           cd $WORKINGDIR
-          # 修正 bootctrl 依赖版本
-          sed -i "s/<project name=\"android_hardware_qcom_bootctrl\" path=\"hardware\/qcom-caf\/bootctrl\" remote=\"LineageOS\" revision=\"lineage-19.1-caf\" \/>/<project name=\"android_hardware_qcom_bootctrl\" path=\"hardware\/qcom-caf\/bootctrl\" remote=\"LineageOS\" revision=\"lineage-21.0-caf\" \/>/g" .repo/manifests/twrp-default.xml
-          # 删除重复的 recovery 项目
-          sed -i "/<project path=\"bootable\/recovery\" name=\"android_bootable_recovery\" remote=\"TeamWin\" revision=\"android-12.1\"\/>/d" .repo/manifests/twrp-default.xml
+          sed -i 's/<project name=\"android_hardware_qcom_bootctrl\" path=\"hardware\/qcom-caf\/bootctrl\" remote=\"LineageOS\" revision=\"lineage-19.1-caf\" \/>/<project name=\"android_hardware_qcom_bootctrl\" path=\"hardware\/qcom-caf\/bootctrl\" remote=\"LineageOS\" revision=\"lineage-21.0-caf\" \/>/g' .repo/manifests/twrp-default.xml
+          sed -i '/<project path=\"bootable\/recovery\" name=\"android_bootable_recovery\" remote=\"TeamWin\" revision=\"android-12.1\"\/>/d' .repo/manifests/twrp-default.xml
           mv bootable/recovery bootable/recovery-ofrp
-          # 后台输出同步进度（每60秒一次）
           (while true; do echo "🔄 Syncing 12.1 dependencies..."; sleep 60; done) &
           TIP_PID=$!
           repo sync
           kill $TIP_PID && exit 0
-          # 恢复 OFRP recovery 目录
           mv bootable/recovery-ofrp bootable/recovery
 
-      - name: "🧩 Patch Source Code (12.1 Branch)"
-        if: ${{ inputs.MANIFEST_BRANCH == '12.1' }}
+      - name: 🧩 Patch Source Code (12.1 Branch)
+        if: ${{ inputs.MANIFEST_BRANCH == "12.1" }}
         run: |
           cd bootable/recovery
-          # 应用 OrangeFox 补丁（忽略冲突）
-          git fetch "https://github.com/ymdzq/OrangeFox_Recovery" fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || true
+          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || true
 
-      - name: "🧩 Patch Source Code (14.1 Branch)"
-        if: ${{ inputs.MANIFEST_BRANCH == '14.1' }}
+      - name: 🧩 Patch Source Code (14.1 Branch)
+        if: ${{ inputs.MANIFEST_BRANCH == "14.1" }}
         run: |
           cd bootable/recovery
-          # 应用 OrangeFox 补丁（忽略冲突）
-          git fetch "https://github.com/ymdzq/OrangeFox_Recovery" fox_14.1 && git cherry-pick 36289fac..05b3e1b9 || true
+          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_14.1 && git cherry-pick 36289fac..05b3e1b9 || true
 
-      - name: "📱 Clone device tree"
+      - name: 📱 Setup device
         run: |
-          # 克隆设备树到指定路径
           git clone ${{ inputs.DEVICE_TREE_URL }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
           cd ${{ github.event.inputs.DEVICE_PATH }}
-          # 记录设备树 commit ID
           echo "COMMIT_ID=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          # 处理设备树 URL（去除 .git 后缀）
           echo "DEVICE_TREE_URL=${{ inputs.DEVICE_TREE_URL%.git }}" >> "$GITHUB_ENV"
 
-      - name: "🧩 Apply custom patches"
+      - name: 🧩 Apply patches
         run: |
           WORKINGDIR=$(pwd)
           cd $WORKINGDIR/bootable/recovery
-          # 应用设备树中的补丁（无补丁目录时不报错）
-          if [ -d "$WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/patches" ]; then
+          # 补丁路径容错：无补丁目录时不报错
+          if [ -d $WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/patches ]; then
             git apply $WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch || true
           fi
           cd $WORKINGDIR
-          # 替换 libmicrohttpd 为自定义版本
-          git clone "https://github.com/adontoo/android_external_libmicrohttpd" -b ofox-14.1 external/libmicrohttpd
-          # 替换 bionic 为自定义版本
+          git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd
           rm -rf bionic
-          git clone "https://github.com/adontoo/OrangeFox-android_platform_bionic" bionic
+          git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic
 
-      - name: "🔧 Configure Built-in Magisk"
+      - name: 🔧 Configure Built-in Magisk
         run: |
           DEVICE_DIR=${{ github.event.inputs.DEVICE_PATH }}
-          # 克隆预编译 Magisk 仓库
-          git clone "https://github.com/ymdzq/twrp_prebuilt" ~/twrp_prebuilt
-          # 配置 FOX_USE_SPECIFIC_MAGISK_ZIP（不存在则添加，存在则替换）
-          if [ -f "$DEVICE_DIR/vendorsetup.sh" ]; then
+          git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt
+          if [ -f $DEVICE_DIR/vendorsetup.sh ]; then
             if ! grep -q "FOX_USE_SPECIFIC_MAGISK_ZIP" $DEVICE_DIR/vendorsetup.sh; then
               echo "export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk" >> $DEVICE_DIR/vendorsetup.sh
             else
@@ -210,58 +189,57 @@ jobs:
             fi
           fi
 
-      - name: "🔄 Update Magiskboot"
+      - name: 🔄 Update Magiskboot
         run: |
-          # 获取最新 Magisk 预编译包 URL
-          MAGISK_URL=$(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true" | jq -r ".[0].assets[] | select(.name | test(\"Magisk-.*\\.apk\")) | .browser_download_url")
-          if [ -n "$MAGISK_URL" ]; then
-            curl -L --retry 3 $MAGISK_URL -o Magisk.apk
-            # 提取 libmagiskboot.so
+            curl -L --retry 3 $(echo $(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true") | jq -r '.[0].assets[] | select(.name | test("Magisk-.*\\.apk")) | .browser_download_url') -o Magisk.apk
             unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot
-            # 确保输出目录存在
             mkdir -p vendor/recovery/prebuilt/arm vendor/recovery/prebuilt/arm64 vendor/recovery/tools
-            # 复制对应架构的 magiskboot
             cp -f ~/magiskboot/lib/armeabi-v7a/libmagiskboot.so vendor/recovery/prebuilt/arm/magiskboot_updated
             cp -f ~/magiskboot/lib/arm64-v8a/libmagiskboot.so vendor/recovery/prebuilt/arm64/magiskboot_updated
             cp -f ~/magiskboot/lib/x86_64/libmagiskboot.so vendor/recovery/tools/magiskboot
-          fi
 
-      - name: "🛠️ Build OFRP"
+      - name: 📝 Generate build info
         run: |
-          # 初始化构建环境
+          echo -e "$BUILD_INFO" >> INFO.txt
+          echo "📜 Change log:" >> INFO.txt
+          set +e
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null)
+          if [ $? -eq 0 ]; then
+            git log "$LAST_TAG"..HEAD --pretty=format:"- %h-%an: %s" >> INFO.txt
+          else
+            git log --pretty=format:"- %h-%an: %s" >> INFO.txt
+          fi
+          cat INFO.txt
+        working-directory: ${{ github.event.inputs.DEVICE_PATH }}
+
+      - name: 🛠️ Build OFRP
+        run: |
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           export CCACHE_DIR=.ccache
           export CCACHE_EXEC=$(command -v ccache)        
           export CCACHE_MAXSIZE=5G
           export USE_CCACHE=${{ inputs.USE_CCACHE && 1 || 0 }}
-          # 执行 lunch（TWRP 标准格式：twrp_${目标}-eng）
-          lunch "twrp_${{ env.LUNCH_TARGET }}-eng"
-          # 后台输出构建进度（每10秒一次，显示剩余内存）
-          (while true; do echo "🛠️ [$(date +%T)] Building OFRP... | Free Mem: $(free -h | awk '/Mem:/ {print $4}')"; sleep 10; done) &
-          TIP_PID=$!
-          # 开始构建（先编译 adbd，再编译目标分区镜像）
+          # 还原Lunch目标为 TWRP 标准格式：twrp_${目标}-eng
+          lunch twrp_${{ env.LUNCH_TARGET }}-eng
           mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
-          # 重命名产物（规范命名格式）
-          OUT_IMG="out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img"
-          if [ -f "$OUT_IMG" ]; then
-            mv "$OUT_IMG" "out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}.img"
-          fi
-          kill $TIP_PID && exit 0
+          # 产物路径修正：确保out目录产物正确命名
+          OUT_IMG=out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img     
+          mv $OUT_IMG out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}.img
 
-      - name: "📤 Upload to GitHub Release"
+      - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: | 
             out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}.img
-          name: "🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}-${{ github.run_id }}"
-          tag_name: "${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}-${{ github.run_id }}"
+          name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+          tag_name: ${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
             ## 🦊 OrangeFox Recovery Unofficial Release
             ${{ env.BUILD_INFO }}
-            ### ⚠️ Important Notes
-            - For ${{ github.event.inputs.DEVICE_NAME }} device ONLY
-            - Flash at your own risk (no warranty)
+            ### ⚠️ Notes
+            - For ${{ github.event.inputs.DEVICE_NAME }} device only
+            - Flash at your own risk
             - Device tree commit: [${{ env.COMMIT_ID:0:8 }}](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }})
           body_path: ${{ github.event.inputs.DEVICE_PATH }}/INFO.txt
         env:
