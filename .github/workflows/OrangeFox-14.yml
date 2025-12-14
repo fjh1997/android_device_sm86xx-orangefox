@@ -98,35 +98,31 @@ jobs:
           sudo systemctl restart zramswap
           zramctl
 
-      # 修正14.1分支：统一子目录结构+正确TWRP分支（twrp-14）
       - name: Sync TWRP & OFRP source (14.1 Branch)
         if: inputs.MANIFEST_BRANCH == '14.1'
         run: |
           # 创建14.1专属子目录（与12.1分支结构一致）
-          mkdir -p $WORKSPACE/fox_14.1
-          cd $WORKSPACE/fox_14.1
-          # 修正TWRP分支：orangefox_sync.sh要求14.1分支对应twrp-14
+          mkdir -p ${{ env.WORKSPACE }}/fox_14.1
+          cd ${{ env.WORKSPACE }}/fox_14.1
           repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp -b twrp-14 --depth=1
           repo sync
-          # 同步OFRP源码到专属子目录
           git clone https://gitlab.com/OrangeFox/sync.git -b master
           cd sync
-          ./orangefox_sync.sh --branch 14.1 --path $WORKSPACE/fox_14.1
+          ./orangefox_sync.sh --branch 14.1 --path ${{ env.WORKSPACE }}/fox_14.1
 
-      # 12.1分支保留原有逻辑（已符合子目录规范）
       - name: Initialize OrangeFox Manifest (12.1 Branch)
         if: inputs.MANIFEST_BRANCH == '12.1'
         run: |
-          mkdir -p $WORKSPACE
-          cd $WORKSPACE
+          mkdir -p ${{ env.WORKSPACE }}
+          cd ${{ env.WORKSPACE }}
           git clone https://gitlab.com/OrangeFox/sync.git -b master
           cd sync
-          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}
+          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${{ env.WORKSPACE }}/fox_${{ inputs.MANIFEST_BRANCH }}
 
       - name: Fix 12.1 Branch Dependencies (Android13+ Compatibility)
         if: inputs.MANIFEST_BRANCH == '12.1'
         run: |
-          FOX_DIR=$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}
+          FOX_DIR=${{ env.WORKSPACE }}/fox_${{ inputs.MANIFEST_BRANCH }}
           sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' $FOX_DIR/.repo/manifests/twrp-default.xml
           sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' $FOX_DIR/.repo/manifests/twrp-default.xml
           mv $FOX_DIR/bootable/recovery $FOX_DIR/bootable/recovery-ofrp
@@ -137,22 +133,20 @@ jobs:
       - name: Patch 12.1 Branch Source Code
         if: inputs.MANIFEST_BRANCH == '12.1'
         run: |
-          FOX_DIR=$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}
+          FOX_DIR=${{ env.WORKSPACE }}/fox_${{ inputs.MANIFEST_BRANCH }}
           cd $FOX_DIR/bootable/recovery
           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || true
 
-      # 修正14.1分支补丁路径（对应专属子目录）
       - name: Patch 14.1 Branch Source Code
         if: inputs.MANIFEST_BRANCH == '14.1'
         run: |
-          FOX_DIR=$WORKSPACE/fox_14.1
+          FOX_DIR=${{ env.WORKSPACE }}/fox_14.1
           cd $FOX_DIR/bootable/recovery
           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_14.1 && git cherry-pick 36289fac..05b3e1b9 || true
 
-      # 统一分支目录逻辑：所有分支均使用 fox_${BRANCH} 子目录
       - name: Clone Device Tree
         run: |
-          FOX_DIR=$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}
+          FOX_DIR=${{ env.WORKSPACE }}/fox_${{ inputs.MANIFEST_BRANCH }}
           git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} $FOX_DIR/${{ inputs.DEVICE_PATH }}
           cd $FOX_DIR/${{ inputs.DEVICE_PATH }}
           echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
@@ -160,18 +154,18 @@ jobs:
 
       - name: Configure Built-in Magisk
         run: |
-          FOX_DIR=$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}
+          FOX_DIR=${{ env.WORKSPACE }}/fox_${{ inputs.MANIFEST_BRANCH }}
           DEVICE_DIR=$FOX_DIR/${{ inputs.DEVICE_PATH }}
           git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt
           if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' $DEVICE_DIR/vendorsetup.sh; then
             echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk' >> $DEVICE_DIR/vendorsetup.sh
           else
-            sed -i 's/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/' $DEVICE_DIR/vendorsetup.sh
+            sed -i 's|.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*|export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk|' $DEVICE_DIR/vendorsetup.sh
           fi
 
       - name: Update Magiskboot Binary
         run: |
-          FOX_DIR=$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}
+          FOX_DIR=${{ env.WORKSPACE }}/fox_${{ inputs.MANIFEST_BRANCH }}
           MAGISK_URL=$(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true" | jq -r '.[0].assets[] | select(.name | test("Magisk-.*\\.apk")) | .browser_download_url')
           curl -L --retry 3 $MAGISK_URL -o Magisk.apk
           unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot
@@ -181,7 +175,7 @@ jobs:
 
       - name: Generate Build Info
         run: |
-          FOX_DIR=$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}
+          FOX_DIR=${{ env.WORKSPACE }}/fox_${{ inputs.MANIFEST_BRANCH }}
           DEVICE_DIR=$FOX_DIR/${{ inputs.DEVICE_PATH }}
           if [ -n "${{ inputs.LUNCH_TARGET }}" ]; then
             echo "LUNCH_TARGET=${{ inputs.LUNCH_TARGET }}" >> "$GITHUB_ENV"
@@ -213,7 +207,7 @@ jobs:
 
       - name: Build OrangeFox
         run: |
-          FOX_DIR=$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}
+          FOX_DIR=${{ env.WORKSPACE }}/fox_${{ inputs.MANIFEST_BRANCH }}
           cd $FOX_DIR
           export FOX_BUILD_DEVICE=${{ inputs.DEVICE_NAME }}
           export USE_CCACHE=${{ inputs.USE_CCACHE && 1 || 0 }}
@@ -229,7 +223,6 @@ jobs:
           mv out/target/product/${{ inputs.DEVICE_NAME }}/${{ inputs.BUILD_TARGET }}.img out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${BUILD_DATE}.img
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
 
-      # 简化上传路径（因目录统一，无需条件判断）
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
