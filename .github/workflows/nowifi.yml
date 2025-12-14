@@ -97,8 +97,6 @@ jobs:
 
       - name: 📥 Pull TWRP Source
         run: |
-          mkdir -p ${{ env.BUILD_DIR }}
-          cd ${{ env.BUILD_DIR }}
           if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
             TWRP_REPO="https://github.com/nebrassy/platform_manifest_twrp_aosp.git"
             TWRP_BRANCH="twrp-14"
