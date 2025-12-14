@@ -1,0 +1,264 @@
+name: 🦊 OrangeFox 14.1 Builder (all)
+on:
+  workflow_dispatch:
+    inputs:
+      MANIFEST_BRANCH:
+        description: "🌿 OrangeFox Manifest Branch"
+        required: true
+        default: "14.1"
+        type: choice
+        options:
+          - 14.1
+          - 12.1
+      DEVICE_TREE:
+        description: "📱 OrangeFox Device Tree URL"
+        required: true
+        default: "https://github.com/xccxxcys/OrangeFox-Recovery-Builder-2024"
+      DEVICE_TREE_BRANCH:
+        description: "🌿 Device Tree Branch"
+        required: true
+        default: "OrangeFox"
+      DEVICE_PATH:
+        description: "📂 Device Path (device/品牌/型号)"
+        required: true
+        default: "device/oplus/sm86xx"
+      DEVICE_NAME:
+        description: "🖥️ Device Codename"
+        required: true
+        default: "sm86xx"
+      LUNCH_TARGET:
+        description: "🍽️ Lunch Target (默认与设备名一致)"
+        required: false
+        default: "sm86xx"
+      BUILD_PARTITION:
+        description: "🎯 Build Partition"
+        required: true
+        default: "recovery"
+        type: choice
+        options:
+          - boot
+          - recovery
+          - vendorboot
+      MAGISK_VERSION:
+        description: "🔧 Magisk Version"
+        required: true
+        default: "MagiskAlpha"
+        type: choice
+        options:
+          - Magisk
+          - MagiskAlpha
+          - MagiskDelta
+      USE_CCACHE:
+        description: "⚡ Use ccache for compilation"
+        type: boolean
+        required: true
+        default: true
+
+jobs:
+  build:
+    name: 🚀 Build OrangeFox by ${{ github.actor }}
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      WORKSPACE_ROOT: ${{ github.workspace }}/OrangeFox
+      FOX_ROOT: ${{ github.workspace }}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+    permissions:
+      contents: write
+    steps:
+      - name: ℹ️ Show Build Info
+        run: |
+          # 配置Lunch Target（优先使用输入值，否则默认设备名）
+          if [ -n "${{ github.event.inputs.LUNCH_TARGET }}" ]; then
+            echo "LUNCH_TARGET=${{ github.event.inputs.LUNCH_TARGET }}" >> "$GITHUB_ENV"
+          else
+            echo "LUNCH_TARGET=${{ github.event.inputs.DEVICE_NAME }}" >> "$GITHUB_ENV"
+          fi
+          # 记录核心构建信息到环境变量
+          {
+            echo 'BUILD_INFO<<EOF'
+            echo "📱 Device Tree: ${{ inputs.DEVICE_TREE }} (${{ inputs.DEVICE_TREE_BRANCH }})"
+            echo "📂 Device Path: ${{ inputs.DEVICE_PATH }}"
+            echo "🖥️ Device Name: ${{ inputs.DEVICE_NAME }}"
+            echo "🍽️ Lunch Target: ${{ env.LUNCH_TARGET }}"
+            echo "🎯 Build Partition: ${{ inputs.BUILD_PARTITION }}.img"
+            echo "🔧 Magisk Version: ${{ inputs.MAGISK_VERSION }}"
+            echo "⚡ CCACHE Enabled: ${{ inputs.USE_CCACHE }}"
+            echo "📅 Build Date: $(TZ=Asia/Shanghai date +%Y-%m-%d %H:%M:%S)"
+            echo EOF
+          } >> "$GITHUB_ENV"
+          # 配置构建日期（上海时区）
+          echo "BUILD_DATE=$(TZ=Asia/Shanghai date +%Y%m%d)" >> "$GITHUB_ENV"
+
+      - name: 🧹 Cleanup Workspace
+        uses: rokibhasansagar/slimhub_actions@main
+
+      - name: 💾 Maximize Build Space
+        uses: easimon/maximize-build-space@master
+        with:
+          remove-dotnet: true
+          remove-android: true
+          remove-haskell: true
+
+      - name: 🌐 Setup Build Environment
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt update && sudo apt upgrade -y
+          sudo apt install aria2 repo zram-tools linux-modules-extra-$(uname -r) -y
+          # 安装OFRP官方构建依赖
+          git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master
+          cd scripts
+          sudo bash setup/android_build_env.sh
+          # 配置Git用户信息
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+      - name: ⚡ Setup CCACHE
+        uses: hendrikmuhs/ccache-action@v1.2
+        if: inputs.USE_CCACHE
+        with:
+          max-size: "5G"
+          create-symlink: true
+          cache-path: ${{ env.FOX_ROOT }}/.ccache
+
+      - name: 🚀 Setup ZRAM
+        run: |
+          sudo modprobe zram
+          sudo sed -i 's/^#PERCENT=50/PERCENT=90/' /etc/default/zramswap
+          sudo sed -i 's/^#PRIORITY=100/PRIORITY=1000/' /etc/default/zramswap
+          sudo systemctl restart zramswap
+          zramctl
+
+      - name: 🔄 Sync TWRP + OFRP Source
+        run: |
+          mkdir -p ${{ env.WORKSPACE_ROOT }}
+          cd ${{ env.FOX_ROOT }}
+          repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp -b twrp-14 --depth=1
+          # 同步OFRP特性源码
+          git clone https://gitlab.com/OrangeFox/sync.git -b master
+          cd sync
+          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${{ env.FOX_ROOT }}
+
+      - name: 🧩 Fix 14.1 Branch Dependencies
+        if: inputs.MANIFEST_BRANCH == '14.1'
+        run: |
+          cd ${{ env.FOX_ROOT }}
+          mv bootable/recovery bootable/recovery-ofrp
+          repo sync -j$(nproc)
+          mv bootable/recovery-ofrp bootable/recovery
+          # 应用额外补丁（来自ymdzq仓库）
+          cd bootable/recovery
+          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 
+
+      - name: 📱 Clone Device Tree
+        run: |
+          cd ${{ env.FOX_ROOT }}
+          git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
+          # 记录设备树最新Commit ID
+          cd ${{ inputs.DEVICE_PATH }}
+          echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          # 处理设备树URL（去除.git后缀）
+          DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
+          if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
+            DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
+          fi
+          echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
+
+      - name: 🔧 Apply Device Tree Patches
+        run: |
+          cd ${{ env.FOX_ROOT }}
+          # 应用设备树中的补丁（若存在）
+          if [ -d "${{ inputs.DEVICE_PATH }}/patches" ]; then
+            echo "🩹 Applying device tree patches..."
+            cd bootable/recovery
+            git apply ${{ env.FOX_ROOT }}/${{ inputs.DEVICE_PATH }}/patches/*.patch 
+          fi
+
+      - name: 📝 Generate Build Log
+        run: |
+          cd ${{ env.FOX_ROOT }}/${{ inputs.DEVICE_PATH }}
+          # 生成INFO.txt（包含构建信息和Git日志）
+          echo -e "$BUILD_INFO" >> INFO.txt
+          echo -e "\n📜 Device Tree Commit Log:" >> INFO.txt
+          git log -10 --pretty=format:"- %h (%cd): %s" --date=short >> INFO.txt
+          echo -e "\n🔧 Magisk Configuration:" >> INFO.txt
+          echo "- Built-in Magisk: ${{ inputs.MAGISK_VERSION }}" >> INFO.txt
+          cat INFO.txt
+
+      - name: 🔄 Update Built-in Magisk APK
+        run: |
+          # 克隆预编译Magisk仓库
+          git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt
+          cd ${{ env.FOX_ROOT }}/${{ inputs.DEVICE_PATH }}
+          # 配置FOX_USE_SPECIFIC_MAGISK_ZIP（不存在则添加，存在则更新）
+          if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' vendorsetup.sh; then
+            echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk' >> vendorsetup.sh
+            echo "✅ Added Magisk path to vendorsetup.sh"
+          else
+            sed -i 's/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/' vendorsetup.sh
+            echo "✅ Updated Magisk path in vendorsetup.sh"
+          fi
+
+      - name: 🔧 Update Magiskboot Tool
+        run: |
+          cd ${{ env.FOX_ROOT }}
+          # 下载最新Magisk APK（包含magiskboot）
+          curl -L --retry 3 $(echo $(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true") | jq -r '.[0].assets[] | select(.name | test("Magisk-.*\\.apk")) | .browser_download_url') -o Magisk.apk
+          # 提取magiskboot.so并替换到对应目录
+          unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot
+          cp -f ~/magiskboot/lib/armeabi-v7a/libmagiskboot.so vendor/recovery/prebuilt/arm/magiskboot_updated
+          cp -f ~/magiskboot/lib/arm64-v8a/libmagiskboot.so vendor/recovery/prebuilt/arm64/magiskboot_updated
+          cp -f ~/magiskboot/lib/x86_64/libmagiskboot.so vendor/recovery/tools/magiskboot
+          echo "✅ Updated magiskboot to latest version"
+
+      - name: 🛠️ Build OrangeFox
+        run: |
+          cd ${{ env.FOX_ROOT }}
+          export FOX_BUILD_DEVICE=${{ inputs.DEVICE_NAME }}
+          export ALLOW_MISSING_DEPENDENCIES=true
+          # 启用CCACHE（根据开关配置）
+          if [[ ${{ inputs.USE_CCACHE }} == true ]]; then
+            export USE_CCACHE=1
+            export CCACHE_EXEC=/usr/bin/ccache
+            export CCACHE_MAXSIZE=5G
+            # 修复CCACHE沙箱冲突
+            sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
+          fi
+          # 初始化编译环境
+          source build/envsetup.sh
+          lunch twrp_${{ env.LUNCH_TARGET }}-eng
+          # 清理旧构建产物
+          make clean
+          # 后台输出编译状态（每10秒打印内存使用情况）
+          (while true; do
+            echo "⏱️ [$(TZ=Asia/Shanghai date +%H:%M:%S)] Building OFRP... | Free Mem: $(free -h | awk '/Mem:/ {print $4}')"
+            sleep 10
+          done) &
+          TIP_PID=$!
+          # 开始编译
+          mka adbd ${{ inputs.BUILD_PARTITION }}image
+          # 终止后台状态输出
+          kill $TIP_PID && exit 0
+          # 重命名产物（包含设备名、日期、Magisk版本）
+          mv out/target/product/${{ inputs.DEVICE_NAME }}/${{ inputs.BUILD_PARTITION }}.img out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox-12.1-${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img
+
+      - name: 📤 Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.FOX_ROOT }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox-12.1-${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img
+            ${{ env.FOX_ROOT }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
+          name: 🦊 OrangeFox-12.1-${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+          tag_name: ${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+          body: |
+            ## 🦊 OrangeFox Recovery Unofficial Release
+            ${{ env.BUILD_INFO }}
+            
+            ### 📋 Key Details
+            - Device Tree: [${{ inputs.DEVICE_TREE_BRANCH }}](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
+            - Latest Commit: [${{ env.COMMIT_ID }}](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }})
+            - Built-in Magisk: ${{ inputs.MAGISK_VERSION }} (Latest)
+            
+            ### ⚠️ Warning
+            - For ${{ inputs.DEVICE_NAME }} only!
+            - Flash at your own risk. Backup data before flashing.
+          body_path: ${{ env.FOX_ROOT }}/${{ inputs.DEVICE_PATH }}/INFO.txt

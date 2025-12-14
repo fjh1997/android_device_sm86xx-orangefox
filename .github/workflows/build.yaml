@@ -1,4 +1,4 @@
-name: 🦊 OFRP 14.1 Builder
+name: 🦊 OFRP 14.1 Builder(only wifi)
 on:
   workflow_dispatch:
     inputs:
