@@ -28,8 +28,8 @@ on:
         default: "sm86xx"
       LUNCH_TARGET:
         description: '🍽️ Lunch Target (default same as device name)'
-        required: false
-        default: ""
+        required: true
+        default: "sm86xx"
       BUILD_PARTITION:
         description: '🎯 Build Partition Target'
         required: true
