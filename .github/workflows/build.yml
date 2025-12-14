@@ -85,17 +85,16 @@ jobs:
 
           # 汇总构建信息到 BUILD_INFO 环境变量（多行）
           cat >> "$GITHUB_ENV" <<'EOF'
-BUILD_INFO<<'BUILD_EOF'
- 
-📱 Device Tree URL: ${{ github.event.inputs.DEVICE_TREE_URL }}
-🌿 Device Tree Branch: ${{ github.event.inputs.DEVICE_TREE_BRANCH }}
-📂 Device Path: device/${{ github.event.inputs.DEVICE_PATH }}
-🖥️ Device Name: ${{ github.event.inputs.DEVICE_NAME }}
-🍽️ Lunch Target: '"${LUNCH_TARGET}"'
-🎯 Build Target: ${{ github.event.inputs.BUILD_PARTITION }}.img
-🔧 Magisk Version: ${{ github.event.inputs.MAGISK_VERSION }}
-🌿 Manifest Branch: ${{ github.event.inputs.MANIFEST_BRANCH }}
-📅 Build Date: $(date +'%Y-%m-%d %H:%M:%S')
+          BUILD_INFO<<'BUILD_EOF'
+         📱 Device Tree URL: ${{ github.event.inputs.DEVICE_TREE_URL }}
+         🌿 Device Tree Branch: ${{ github.event.inputs.DEVICE_TREE_BRANCH }}
+         📂 Device Path: device/${{ github.event.inputs.DEVICE_PATH }}
+         🖥️ Device Name: ${{ github.event.inputs.DEVICE_NAME }}
+         🍽️ Lunch Target: '"${LUNCH_TARGET}"'
+         🎯 Build Target: ${{ github.event.inputs.BUILD_PARTITION }}.img
+         🔧 Magisk Version: ${{ github.event.inputs.MAGISK_VERSION }}
+         🌿 Manifest Branch: ${{ github.event.inputs.MANIFEST_BRANCH }}
+         📅 Build Date: $(date +'%Y-%m-%d %H:%M:%S')
 
 BUILD_EOF
 EOF
@@ -210,7 +209,13 @@ EOF
           fi
 
       # 克隆设备树
-      - name.DEVICE_PATH }}"
+      - name: 📱 Setup Device Tree
+        run: |
+          FOX_DIR="$WORKSPACE/fox_${{ inputs.MANIFEST_BRANCH }}"
+          git clone ${{ inputs.DEVICE_TREE_URL }} -b ${{ inputs.DEVICE_TREE_BRANCH }} \
+            "$FOX_DIR/device/${{ inputs.DEVICE_PATH }}" || true
+          if [ -d "$FOX_DIR/device/${{ inputs.DEVICE_PATH }}" ]; then
+            cd "$FOX_DIR/device/${{ inputs.DEVICE_PATH }}"
             echo "COMMIT_ID=$(git rev-parse HEAD)" >> "$GITHUB_ENV" || true
             # 去掉末尾的 .git（如果有）
             echo "DEVICE_TREE_URL=${{ inputs.DEVICE_TREE_URL%.git }}" >> "$GITHUB_ENV"
@@ -341,7 +346,7 @@ EOF
         with:
           files: |
             ${{ env.WORKSPACE }}/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}.img
-          name: 🦊_DATE }}-${{ github.run_id }}
+          name: 🦊 OrangeFox-R11.3-${{ inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
             ## 🦊 OrangeFox Recovery Unofficial Release
 
