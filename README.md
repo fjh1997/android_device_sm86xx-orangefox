@@ -1,31 +1,7 @@
 # TWRP device tree for OPLUS pineapple sreies
 
 ## Supported devices
-- OnePlus Ace 5 / 13R(CN, GL, IN)
-- OnePlus Ace 3 Pro(CN)
-- OnePlus Ace 3 V / Nord 4(CN, GL, IN)
-- OnePlus 12
-- Realme GT 6(CN)
-- OPPO Find X7 Ultra / Satellite
-## Build it yourself?
-
-If there is no error, recovery.img will be found in `out/target/product/sm86xx/recovery.img`
-
-## Features
-
-Works:
-
-- [X] ADB
-- [X] Display
-- [X] Decryption
-- [X] Fasbootd
-- [X] Flashing
-- [X] MTP
-- [X] Sideload
-- [X] Touch
-- [X] USB OTG
-- [X] Vibrator
-- [X] WLAN
+- OnePlus Pad pro
 
 ## About WLAN
 
