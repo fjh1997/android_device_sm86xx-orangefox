@@ -123,6 +123,8 @@ jobs:
             TWRP_BRANCH="twrp-12.1"
           fi
           repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
+          # 补充：执行repo sync拉取完整源码（原步骤仅init未同步）
+          repo sync 
 
       - name: 🦊 Run OrangeFox Sync
         run: |
@@ -136,25 +138,40 @@ jobs:
       - name: 📱 Setup device
         run: |
           git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
+          # 补充：记录设备树Commit ID（用于Release描述）
+          cd ${{ github.event.inputs.DEVICE_PATH }}
+          echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          # 补充：处理设备树URL（去除.git后缀，确保Release链接正常）
+          DEVICE_TREE_URL="${{ github.event.inputs.DEVICE_TREE_URL }}"
+          [[ "${DEVICE_TREE_URL}" == *.git ]] && DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
+          echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
 
       - name: 🧩 Apply patches
         run: |
           WORKINGDIR=$(pwd)
           cd $WORKINGDIR/bootable/recovery
-          git apply $WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch
+          # 补充：容错处理，避免无补丁或补丁冲突导致构建中断
+          git apply $WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch || echo "⚠️ 部分设备树补丁应用失败，继续构建"
           cd $WORKINGDIR
           git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd
           rm -rf bionic
           git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic
-      
+
       - name: 🔧 Clone OrangeFox Built-in Magisk
         run: |
           git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt
+          # 沿用原版路径，不新增自定义变量
           cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/${{ inputs.DEVICE_PATH }}
-          if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' vendorsetup.sh; then (echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk'>>vendorsetup.sh && echo "✅ Added FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"); else sed -i 's/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/' vendorsetup.sh && echo "✅ Updated FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"; fi
+          if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' vendorsetup.sh; then 
+            echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk'>>vendorsetup.sh && echo "✅ Added FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"
+          else 
+            sed -i 's/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/' vendorsetup.sh && echo "✅ Updated FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"
+          fi
 
       - name: 🔧 Update OrangeFox Built-in magiskboot
         run: |
+          # 沿用原版路径，提前创建目标目录（避免路径不存在报错）
+          sudo mkdir -p ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm64 ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/tools
           curl -L --retry 3 $(echo $(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true") | jq -r '.[0].assets[] | select(.name | test("Magisk-.*\\.apk")) | .browser_download_url') -o Magisk.apk
           unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot
           cp -f ~/magiskboot/lib/armeabi-v7a/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm/magiskboot_updated"
@@ -178,27 +195,33 @@ jobs:
 
       - name: 🛠️ Build OFRP
         run: |
+          # 沿用原版路径，指定编译目录
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
           set +e
           if [[ ${{ inputs.USE_CCACHE }} == true ]]; then         
-          export CCACHE_DIR=.ccache
-          export CCACHE_EXEC=$(command -v ccache)        
-          export CCACHE_MAXSIZE=5G
-          export USE_CCACHE=1
-          sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
+            export CCACHE_DIR=.ccache
+            export CCACHE_EXEC=$(command -v ccache)        
+            export CCACHE_MAXSIZE=5G
+            export USE_CCACHE=1
+            sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
           fi
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           set -e
-          lunch twrp_${{ github.event.inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
+          # 沿用原版Lunch目标引用
+          lunch twrp_${{ env.LUNCH_TARGET }}-eng && make clean && mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
           echo "✅ OrangeFox build completed!"
-          mv out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.img
+          # 产物文件名添加Magisk版本（便于识别，不改变核心路径）
+          mv out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img
 
       - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: | 
-            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.img
+            # 沿用原版路径结构，补全绝对路径
+            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img
           name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+          # 标签保留原版格式，可选添加设备名（不强制修改）
           tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
             📌 Build: fox_${{ inputs.MANIFEST_BRANCH }}

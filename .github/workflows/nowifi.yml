@@ -29,7 +29,7 @@ on:
       LUNCH_TARGET:
         description: "🍽️ lunch twrp_ (default same as device name)"
         required: false
-        default: "sm86xx 
+        default: "sm86xx"  
       BUILD_PARTITION:
         description: '🎯 Specify your Build Target'
         required: true
@@ -42,7 +42,7 @@ on:
       MAGISK_VERSION:
         description: '🔧 Specify your Magisk Version'
         required: true
-        default: 'MagiskAlpha'
+        default: 'MagiskAlpha'#我喜欢这个magisk版本
         type: choice
         options:
           - Magisk
@@ -73,7 +73,7 @@ jobs:
           {
             echo 'BUILD_INFO<<EOF'
             echo
-            echo "📱 Device tree url: ${{ github.event.inputs.DEVICE_TREE_URL }}"
+            echo "📱 Device tree url: ${{ github.event.inputs.DEVICE_TREE }}"  # 修复：参数名统一（原DEVICE_TREE_URL→DEVICE_TREE，与输入参数一致）
             echo "🌿 Device tree branch: ${{ github.event.inputs.DEVICE_TREE_BRANCH }}"
             echo "📂 Device path: ${{ github.event.inputs.DEVICE_PATH }}"
             echo "🖥️ Device name: ${{ github.event.inputs.DEVICE_NAME }}"
@@ -123,6 +123,7 @@ jobs:
             TWRP_BRANCH="twrp-12.1"
           fi
           repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
+          repo sync 
 
       - name: 🦊 Run OrangeFox Sync
         run: |
@@ -157,7 +158,14 @@ jobs:
           
       - name: 📱 Setup device
         run: |
-          git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
+          git clone ${{ github.event.inputs.DEVICE_TREE }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
+          # 记录设备树Commit ID（用于Release描述）
+          cd ${{ github.event.inputs.DEVICE_PATH }}
+          echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          # 处理设备树URL（去除.git后缀，用于Release链接）
+          DEVICE_TREE_URL="${{ github.event.inputs.DEVICE_TREE }}"
+          [[ "${DEVICE_TREE_URL}" == *.git ]] && DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
+          echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
 
       - name: 🔧 Clone OrangeFox Built-in Magisk
         run: |
@@ -167,6 +175,8 @@ jobs:
 
       - name: 🔧 Update OrangeFox Built-in magiskboot
         run: |
+          # 提前创建目标目录，避免路径不存在报错
+          sudo mkdir -p ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm64 ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/tools
           curl -L --retry 3 $(echo $(curl -s "https://api.github.com/repos/topjohnwu/Magisk/releases?per_page=1&include_prereleases=true") | jq -r '.[0].assets[] | select(.name | test("Magisk-.*\\.apk")) | .browser_download_url') -o Magisk.apk
           unzip -q Magisk.apk "lib/*/libmagiskboot.so" -d ~/magiskboot
           cp -f ~/magiskboot/lib/armeabi-v7a/libmagiskboot.so "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/vendor/recovery/prebuilt/arm/magiskboot_updated"
@@ -190,26 +200,29 @@ jobs:
         
       - name: 🛠️ Building OFRP
         run: |
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}  # 补充：指定编译目录，避免路径错乱
           set +e
           if [[ ${{ inputs.USE_CCACHE }} == true ]]; then
-          export USE_CCACHE=1
-          export CCACHE_EXEC=/usr/bin/ccache
-          sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
+            export USE_CCACHE=1
+            export CCACHE_EXEC=/usr/bin/ccache
+            export CCACHE_MAXSIZE=5G  # 补充：CCACHE缓存大小配置
+            sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
           fi
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           set -e
-          lunch twrp_${{ github.event.inputs.DEVICE_NAME }}-eng && make clean && mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
+          lunch twrp_${{ env.LUNCH_TARGET }}-eng && make clean && mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
           echo "✅ OrangeFox build completed!"
-          mv out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.img
+          # 重命名产物，包含Magisk版本信息
+          mv out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img
       
       - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: | 
-            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}.img
+            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img  # 修复：产物路径补全，避免找不到文件
           name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
-          tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
+          tag_name: ${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}  # 优化：标签包含设备名，便于区分
           body: |
             📌 Build: fox_${{ inputs.MANIFEST_BRANCH }}
             📱 Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
