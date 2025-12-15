@@ -143,7 +143,7 @@ jobs:
            sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' $WORKINGDIR/.repo/manifests/twrp-default.xml
            # 备份并同步recovery源码
            mv $WORKINGDIR/bootable/recovery $WORKINGDIR/bootable/recovery-ofrp
-           repo sync -C $WORKINGDIR
+           repo sync
            mv $WORKINGDIR/bootable/recovery-ofrp $WORKINGDIR/bootable/recovery
            # 拉取并应用OrangeFox补丁（添加容错处理）
            cd $WORKINGDIR/bootable/recovery
@@ -156,7 +156,7 @@ jobs:
            WORKINGDIR=$(pwd)
            # 备份并同步recovery源码
            mv $WORKINGDIR/bootable/recovery $WORKINGDIR/bootable/recovery-ofrp
-           repo sync -C $WORKINGDIR
+           repo sync
            mv $WORKINGDIR/bootable/recovery-ofrp $WORKINGDIR/bootable/recovery
            # 拉取并应用OrangeFox补丁（添加容错处理）
            cd $WORKINGDIR/bootable/recovery
