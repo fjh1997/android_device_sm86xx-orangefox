@@ -188,7 +188,7 @@ jobs:
 
       - name: 🔧 Update OrangeFox Built-in magiskboot
         run: |
-          WORKINGDIR$(pwd)
+          WORKINGDIR=$(pwd)
           # 提前创建目标目录（避免路径不存在报错）
           sudo mkdir -p $WORKINGDIR/vendor/recovery/prebuilt/arm $WORKINGDIR/vendor/recovery/prebuilt/arm64 $WORKINGDIR/vendor/recovery/tools
           # 下载最新Magisk APK（支持预发布版本，重试3次提高稳定性）
