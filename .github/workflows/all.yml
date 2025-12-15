@@ -104,7 +104,7 @@ jobs:
       - name: 📥 Pull TWRP Source
         run: |
             TWRP_REPO="https://github.com/nebrassy/platform_manifest_twrp_aosp.git"
-            TWRP_BRANCH="twrp-14"         
+            TWRP_BRANCH="twrp-14.1"         
           repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
 
       # 第二步：执行橙狐sync脚本，不改动任何参数/逻辑
