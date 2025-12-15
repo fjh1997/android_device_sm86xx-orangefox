@@ -113,8 +113,6 @@ jobs:
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
 
-      - name:.com
-
       - name: 📥 Pull TWRP Source
         run: |
           if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
@@ -139,29 +137,27 @@ jobs:
       - name: 🧩 Patch 12.1 Branch
         if: inputs.MANIFEST_BRANCH == '12.1'
         run: |
-          WORKINGDIR=$(pwd)
-          sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' $WORKINGDIR/.repo/manifests/twrp-default.xml
-          sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' $WORKINGDIR/.repo/manifests/twrp-default.xml
-          mv $WORKINGDIR/bootable/recovery $WORKINGDIR/bootable/recovery-ofrp
-          repo sync
-          mv $WORKINGDIR/bootable/recovery-ofrp $WORKINGDIR/bootable/recovery
-          rm -rf $WORKINGDIR/bootable/recovery-ofrp
-          cd $WORKINGDIR/bootable/recovery
-          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 12.1分支补丁应用失败/无新补丁，继续构建"
-          cd $WORKINGDIR
+           WORKINGDIR=$(pwd)
+           # 修改twrp-default.xml中的项目配置
+           sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' $WORKINGDIR/.repo/manifests/twrp-default.xml
+           sed -i '/<project path="bootable\/recovery" name="android_bootable_recovery" remote="TeamWin" revision="android-12.1"\/>/d' $WORKINGDIR/.repo/manifests/twrp-default.xml
+           # 备份并同步recovery源码
+           mv $WORKINGDIR/bootable/recovery $WORKINGDIR/bootable/recovery-ofrp
+           repo sync
+           mv $WORKINGDIR/bootable/recovery-ofrp $WORKINGDIR/bootable/recovery
+           # 拉取并应用OrangeFox补丁（添加容错处理）
+           cd $WORKINGDIR/bootable/recovery
+           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 12.1分支补丁应用失败/无新补丁，继续构建"
+           cd $WORKINGDIR
 
       - name: 🧩 Patch 14.1 Branch
         if: inputs.MANIFEST_BRANCH == '14.1'
         run: |
-          WORKINGDIR=$(pwd)
-          mv $WORKINGDIR/bootable/recovery $WORKINGDIR/bootable/recovery-ofrp
-          repo sync
-          mv $WORKINGDIR/bootable/recovery-ofrp $WORKINGDIR/bootable/recovery
-          rm -rf $WORKINGDIR/bootable/recovery-ofrp
-          cd $WORKINGDIR/bootable/recovery
-          git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1分支补丁应用失败/无新补丁，继续构建"
-          cd $WORKINGDIR
-
+           WORKINGDIR=$(pwd)
+           cd $WORKINGDIR/bootable/recovery
+           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1分支补丁应用失败/无新补丁，继续构建"
+           cd $WORKINGDIR
+         
       - name: 📱 Setup device
         run: |
           git clone ${{ github.event.inputs.DEVICE_TREE }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
@@ -216,7 +212,6 @@ jobs:
         
       - name: 🛠️ Build OFRP
         run: |
-          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
           set +e
           if [[ ${{ inputs.USE_CCACHE }} == true ]]; then         
             export CCACHE_DIR=.ccache

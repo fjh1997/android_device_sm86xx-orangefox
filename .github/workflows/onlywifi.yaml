@@ -193,7 +193,6 @@ jobs:
 
       - name: 🛠️ Build OFRP
         run: |
-          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
           set +e
           if [[ ${{ inputs.USE_CCACHE }} == true ]]; then         
             export CCACHE_DIR=.ccache
