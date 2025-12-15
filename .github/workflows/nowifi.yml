@@ -227,11 +227,13 @@ jobs:
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           set -e
-          lunch twrp_${{ env.LUNCH_TARGET }}-eng && make clean && mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
-          echo "✅ OrangeFox build completed!"
-          # 重命名产物，包含Magisk版本信息
+          lunch twrp_${{ env.LUNCH_TARGET }}-ap2a-eng
+          (while true; do echo `date +%T` "Building OFRP..."; free -h; sleep 10; done) &
+          TIP_PID=$!
+          mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
           mv out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img
-      
+          kill $TIP_PID && exit 0     
+                
       - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2
         with:
