@@ -113,6 +113,8 @@ jobs:
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
 
+      - name:.com
+
       - name: 📥 Pull TWRP Source
         run: |
           if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
@@ -160,7 +162,6 @@ jobs:
           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1分支补丁应用失败/无新补丁，继续构建"
           cd $WORKINGDIR
 
-         
       - name: 📱 Setup device
         run: |
           git clone ${{ github.event.inputs.DEVICE_TREE }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
@@ -213,13 +214,15 @@ jobs:
           cat INFO.txt
         working-directory: ${{ github.event.inputs.DEVICE_PATH }}
         
-      - name: 🛠️ Building OFRP
+      - name: 🛠️ Build OFRP
         run: |
+          cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
           set +e
-          if [[ ${{ inputs.USE_CCACHE }} == true ]]; then
+          if [[ ${{ inputs.USE_CCACHE }} == true ]]; then         
+            export CCACHE_DIR=.ccache
+            export CCACHE_EXEC=$(command -v ccache)        
+            export CCACHE_MAXSIZE=5G
             export USE_CCACHE=1
-            export CCACHE_EXEC=/usr/bin/ccache
-            export CCACHE_MAXSIZE=5G  # 补充：CCACHE缓存大小配置
             sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
           fi
           source build/envsetup.sh
@@ -229,16 +232,18 @@ jobs:
           (while true; do echo `date +%T` "Building OFRP..."; free -h; sleep 10; done) &
           TIP_PID=$!
           mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
-          mv out/target/product/${{ github.event.inputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_PARTITION }}.img out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img
-          kill $TIP_PID && exit 0     
-                
+          kill $TIP_PID && exit 0      # 移除重命名命令，保留原始产物名
+
       - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: | 
-            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-Magisk${{ inputs.MAGISK_VERSION }}.img  # 修复：产物路径补全，避免找不到文件
-          name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
-          tag_name: ${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}  # 优化：标签包含设备名，便于区分
+            # 直接匹配OrangeFox默认生成的产物（IMG+ZIP+MD5），无需重命名
+            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3_*_Unofficial-${{ github.event.inputs.DEVICE_NAME }}.img
+            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3_*_Unofficial-${{ github.event.inputs.DEVICE_NAME }}.zip
+            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
+          name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}   
+          tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
             📌 Build: fox_${{ inputs.MANIFEST_BRANCH }}
             📱 Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
