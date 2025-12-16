@@ -195,6 +195,7 @@ jobs:
       - name: 🛠️ Build OFRP
         run: |
           set +e
+          export MAKEFLAGS="-j$(nproc)"
           if [[ ${{ inputs.USE_CCACHE }} == true ]]; then
             export CCACHE_DIR=.ccache
             export CCACHE_EXEC=$(command -v ccache)
@@ -208,7 +209,7 @@ jobs:
           lunch twrp_${{ env.LUNCH_TARGET }}-ap2a-eng
           (while true; do echo `date +%T` "Building OFRP..."; free -h; sleep 10; done) &
           TIP_PID=$!
-          mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
+          make -j$(nproc) adbd ${{ github.event.inputs.BUILD_PARTITION }}image
           kill $TIP_PID && exit 0
 
       - name: 📤 Upload to Release
