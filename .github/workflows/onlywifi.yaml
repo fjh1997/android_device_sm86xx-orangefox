@@ -160,7 +160,7 @@ jobs:
       - name: 🔧 Clone OrangeFox Built-in Magisk
         run: |
           WORKINGDIR=$(pwd)
-          git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt
+          git clone https://github.com/xccxxcys/twrp_prebuilt ~/twrp_prebuilt
           if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' $WORKINGDIR/vendorsetup.sh; then
             echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk' >> $WORKINGDIR/vendorsetup.sh && echo "✅ Added FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"
           else

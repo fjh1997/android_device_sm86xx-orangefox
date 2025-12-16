@@ -176,7 +176,7 @@ jobs:
         run: |
           WORKINGDIR=$(pwd)
           # 克隆预编译Magisk仓库
-          git clone https://github.com/ymdzq/twrp_prebuilt ~/twrp_prebuilt
+          git clone https://github.com/xccxxcys/twrp_prebuilt ~/twrp_prebuilt
           # 处理vendorsetup.sh中的Magisk路径配置（添加/更新环境变量）
           if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' $WORKINGDIR/vendorsetup.sh; then 
             echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk' >> $WORKINGDIR/vendorsetup.sh && echo "✅ Added FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"
