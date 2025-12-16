@@ -5,7 +5,7 @@ on:
       MANIFEST_BRANCH:
         description: '🌿 OrangeFox Manifest Branch'
         required: true
-        default: '12.1'
+        default: '14.1'
         type: choice
         options:
           - 12.1
@@ -235,18 +235,18 @@ jobs:
       - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: | 
-            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.img
-            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.zip
-            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
-          name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}   
+          files: |
+            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.img
+            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.zip
+            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
+          name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
           tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
-            ## OrangeFox Recovery Build - Unofficial
+            ### OrangeFox Recovery Build - Unofficial
             📌 Build: fox_${{ inputs.MANIFEST_BRANCH }}
             📱 Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
             ✅ Trigger Commit: [${{ github.sha }}](${{ env.DEVICE_TREE_URL }}/commit/${{ github.sha }})
-            🔧 Magisk Version: ${{ inputs.MAGISK_VERSION }}       
+            🔧 Magisk Version: ${{ inputs.MAGISK_VERSION }}
             
             ### ⚠️ Warning
             - For ${{ inputs.DEVICE_NAME }} only!

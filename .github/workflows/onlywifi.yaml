@@ -215,9 +215,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.img
-            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.zip
-            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
+            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.img
+            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.zip
+            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
           name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
           tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
