@@ -1,15 +1,15 @@
-name: 🦊 OFRP Builder(no wifi)
+name: 🦊 OFRP Builder (auto)
 on:
   workflow_dispatch:
     inputs:
       MANIFEST_BRANCH:
         description: '🌿 OrangeFox Manifest Branch'
         required: true
-        default: '14.1'
+        default: '12.1'
         type: choice
         options:
-          - 14.1
           - 12.1
+          - 14.1
       DEVICE_TREE:
         description: '📱 Device Tree URL'
         required: true
@@ -118,22 +118,27 @@ jobs:
           if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
             TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
             TWRP_BRANCH="twrp-14.1"
-          else
-            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
-            TWRP_BRANCH="twrp-12.1"
+            repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
+            repo sync
           fi
-          repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
-          repo sync 
 
       - name: 🦊 Run OrangeFox Sync
         run: |
+         if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
           git clone https://gitlab.com/OrangeFox/sync.git -b master
           WORKINGDIR=$(pwd)
           chmod +x sync/orangefox_sync.sh
           cd sync
-          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
+          ./orangefox_sync.sh --branch ${{ github.event.inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
           cd $WORKINGDIR
-          
+         else
+          WORKINGDIR=$(pwd)
+          git clone https://gitlab.com/OrangeFox/sync.git -b master
+          chmod +x sync/orangefox_sync.sh
+          cd sync
+          ./orangefox_sync.sh --branch ${{ github.event.inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
+         fi
+                    
       - name: 🧩 Patch 12.1 Branch
         if: inputs.MANIFEST_BRANCH == '12.1'
         run: |
@@ -150,20 +155,18 @@ jobs:
            git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 12.1分支补丁应用失败/无新补丁，继续构建"
            cd $WORKINGDIR
 
-      - name: 🧩 Patch 14.1 Branch
-        if: inputs.MANIFEST_BRANCH == '14.1'
-        run: |
-           WORKINGDIR=$(pwd)
-           cd $WORKINGDIR/bootable/recovery
-           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1分支补丁应用失败/无新补丁，继续构建"
-           cd $WORKINGDIR
+    # - name: 🧩 Patch 14.1 Branch
+    #   if: inputs.MANIFEST_BRANCH == '14.1'
+    #   run: |
+    #      WORKINGDIR=$(pwd)
+    #      cd $WORKINGDIR/bootable/recovery
+    #      git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1分支补丁应用失败/无新补丁，继续构建"
+    #      cd $WORKINGDIR
+    #不要启用，会冲突
          
       - name: 📱 Setup device
         run: |
           git clone ${{ github.event.inputs.DEVICE_TREE }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
-          # 记录设备树Commit ID（用于Release描述）
-          cd ${{ github.event.inputs.DEVICE_PATH }}
-          echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
           # 处理设备树URL（去除.git后缀，用于Release链接）
           DEVICE_TREE_URL="${{ github.event.inputs.DEVICE_TREE }}"
           [[ "${DEVICE_TREE_URL}" == *.git ]] && DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
@@ -233,19 +236,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: | 
-            # 直接匹配OrangeFox默认生成的产物（IMG+ZIP+MD5），无需重命名
-            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3_*_Unofficial-${{ github.event.inputs.DEVICE_NAME }}.img
-            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3_*_Unofficial-${{ github.event.inputs.DEVICE_NAME }}.zip
-            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
+            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.img
+            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.zip
+            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
           name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}   
           tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
+             ## OrangeFox Recovery Build - Unofficial
             📌 Build: fox_${{ inputs.MANIFEST_BRANCH }}
             📱 Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
-            ✅ Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
-            🔧 Magisk Version: ${{ inputs.MAGISK_VERSION }}
-            ⚡ CCACHE Enabled: ${{ inputs.USE_CCACHE }}
-            🎯 Build Target: ${{ github.event.inputs.BUILD_PARTITION }}
+            ✅ Trigger Commit: [${{ github.sha }}](${{ env.DEVICE_TREE_URL }}/commit/${{ github.sha }})
+            🔧 Magisk Version: ${{ inputs.MAGISK_VERSION }}       
+            
+            ### ⚠️ Warning
+            - For ${{ inputs.DEVICE_NAME }} only!
           body_path: ${{ github.event.inputs.DEVICE_PATH }}/INFO.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

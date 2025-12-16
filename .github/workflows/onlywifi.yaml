@@ -88,7 +88,7 @@ jobs:
       - name: 🧹 Cleanup
         uses: rokibhasansagar/slimhub_actions@main
 
-      - name: 💾 Maximize build space
+      - name: 💾 Max build space
         uses: easimon/maximize-build-space@master
 
       - name: ⚡ Setup ccache
@@ -118,29 +118,30 @@ jobs:
           if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
             TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
             TWRP_BRANCH="twrp-14.1"
-          else
-            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
-            TWRP_BRANCH="twrp-12.1"
+            repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
+            repo sync
           fi
-          repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
-          # 补充：执行repo sync拉取完整源码（原步骤仅init未同步）
-          repo sync 
 
       - name: 🦊 Run OrangeFox Sync
         run: |
+         if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
           git clone https://gitlab.com/OrangeFox/sync.git -b master
           WORKINGDIR=$(pwd)
           chmod +x sync/orangefox_sync.sh
           cd sync
-          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
+          ./orangefox_sync.sh --branch ${{ github.event.inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
           cd $WORKINGDIR
-
+         else
+          WORKINGDIR=$(pwd)
+          git clone https://gitlab.com/OrangeFox/sync.git -b master
+          chmod +x sync/orangefox_sync.sh
+          cd sync
+          ./orangefox_sync.sh --branch ${{ github.event.inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
+         fi
+         
       - name: 📱 Setup device
         run: |
           git clone ${{ github.event.inputs.DEVICE_TREE_URL }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
-          # 补充：记录设备树Commit ID（用于Release描述）
-          cd ${{ github.event.inputs.DEVICE_PATH }}
-          echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
           # 补充：处理设备树URL（去除.git后缀，确保Release链接正常）
           DEVICE_TREE_URL="${{ github.event.inputs.DEVICE_TREE_URL }}"
           [[ "${DEVICE_TREE_URL}" == *.git ]] && DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
@@ -208,25 +209,26 @@ jobs:
           (while true; do echo `date +%T` "Building OFRP..."; free -h; sleep 10; done) &
           TIP_PID=$!
           mka adbd ${{ github.event.inputs.BUILD_PARTITION }}image
-          kill $TIP_PID && exit 0      # 移除重命名命令，保留原始产物名
+          kill $TIP_PID && exit 0     
 
       - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: | 
-            # 直接匹配OrangeFox默认生成的产物（IMG+ZIP+MD5），无需重命名
-            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3_*_Unofficial-${{ github.event.inputs.DEVICE_NAME }}.img
-            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox-R11.3_*_Unofficial-${{ github.event.inputs.DEVICE_NAME }}.zip
-            ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
+            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.img
+            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/OrangeFox*.zip
+            /out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
           name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}   
           tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
+             ### OrangeFox Recovery Build - Unofficial
             📌 Build: fox_${{ inputs.MANIFEST_BRANCH }}
             📱 Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
-            ✅ Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
+            ✅ Trigger Commit: [${{ github.sha }}](${{ env.DEVICE_TREE_URL }}/commit/${{ github.sha }})
             🔧 Magisk Version: ${{ inputs.MAGISK_VERSION }}
-            ⚡ CCACHE Enabled: ${{ inputs.USE_CCACHE }}
-            🎯 Build Target: ${{ github.event.inputs.BUILD_PARTITION }}
+            
+            ### ⚠️ Warning
+            - For ${{ inputs.DEVICE_NAME }} only!
           body_path: ${{ github.event.inputs.DEVICE_PATH }}/INFO.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
