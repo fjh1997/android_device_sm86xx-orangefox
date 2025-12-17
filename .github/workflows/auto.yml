@@ -133,13 +133,18 @@ jobs:
             TWRP_BRANCH="twrp-14"
             repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
             repo sync
-          fi         
+          else
+            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp"
+            TWRP_BRANCH="twrp-12.1"
+            repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
+            repo sync
+          fi
           git clone https://gitlab.com/OrangeFox/sync.git -b master
           chmod +x sync/orangefox_sync.sh
           cd sync
-          ./orangefox_sync.sh --branch ${{ github.event.inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
+          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
           cd $WORKINGDIR
-                    
+
       - name: 🧩 Apply skkk 12.1 patches
         if: ${{ inputs.USE_SKKK_PATCHES == true && inputs.MANIFEST_BRANCH == '12.1' }}
         run: |
@@ -167,24 +172,24 @@ jobs:
         run: |
           WORKINGDIR=$(pwd)
           cd $WORKINGDIR/bootable/recovery
-          git apply $WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch || echo "⚠️ 14.1分支wifi补丁应用失败，继续构建"
+          git apply $WORKINGDIR/${{ inputs.DEVICE_PATH }}/patches/*.patch || echo "⚠️ 14.1分支wifi补丁应用失败，继续构建"
           cd $WORKINGDIR
           git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd
           rm -rf bionic
           git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic
-         
+
       - name: 📱 Setup device
         run: |
-          git clone ${{ github.event.inputs.DEVICE_TREE }} -b ${{ github.event.inputs.DEVICE_TREE_BRANCH }} ${{ github.event.inputs.DEVICE_PATH }}
-          DEVICE_TREE_URL="${{ github.event.inputs.DEVICE_TREE }}"
+          git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ${{ inputs.DEVICE_PATH }}
+          DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
           [[ "${DEVICE_TREE_URL}" == *.git ]] && DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
           echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
 
       - name: 🔧 Auto set API Level in device.mk
         run: |
           WORKINGDIR=$(pwd)
-          TARGET_API_LEVEL="${{ github.event.inputs.TARGET_API_LEVEL }}"
-          DEVICE_MK_PATH="$WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/device.mk"
+          TARGET_API_LEVEL="${{ inputs.TARGET_API_LEVEL }}"
+          DEVICE_MK_PATH="$WORKINGDIR/${{ inputs.DEVICE_PATH }}/device.mk"
           if ! grep -q '^BOARD_SHIPPING_API_LEVEL' "$DEVICE_MK_PATH"; then
             echo "BOARD_SHIPPING_API_LEVEL := $TARGET_API_LEVEL" >> "$DEVICE_MK_PATH" && echo "✅ Added BOARD_SHIPPING_API_LEVEL=$TARGET_API_LEVEL in $DEVICE_MK_PATH"
           else
@@ -200,9 +205,9 @@ jobs:
         run: |
           WORKINGDIR=$(pwd)
           git clone https://github.com/xccxxcys/twrp_prebuilt ~/twrp_prebuilt
-          if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' $WORKINGDIR/vendorsetup.sh; then 
+          if ! grep -q 'FOX_USE_SPECIFIC_MAGISK_ZIP' $WORKINGDIR/vendorsetup.sh; then
             echo 'export FOX_USE_SPECIFIC_MAGISK_ZIP=~/twrp_prebuilt/Magisk/${{ inputs.MAGISK_VERSION }}.apk' >> $WORKINGDIR/vendorsetup.sh && echo "✅ Added FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"
-          else 
+          else
             sed -i 's/.*export FOX_USE_SPECIFIC_MAGISK_ZIP.*/export FOX_USE_SPECIFIC_MAGISK_ZIP=\~\/twrp_prebuilt\/Magisk\/${{ inputs.MAGISK_VERSION }}.apk/' $WORKINGDIR/vendorsetup.sh && echo "✅ Updated FOX_USE_SPECIFIC_MAGISK_ZIP in vendorsetup.sh"
           fi
 
@@ -216,7 +221,7 @@ jobs:
           cp -f ~/magiskboot/lib/arm64-v8a/libmagiskboot.so $WORKINGDIR/vendor/recovery/prebuilt/arm64/magiskboot_updated
           cp -f ~/magiskboot/lib/x86_64/libmagiskboot.so $WORKINGDIR/vendor/recovery/tools/magiskboot
           echo "✅ Updated magiskboot successfully"
-          
+
       - name: 📝 Generate build info
         run: |
           echo -e "$BUILD_INFO" >> INFO.txt
@@ -229,8 +234,8 @@ jobs:
             git log --pretty=format:"- %h-%an: %s" >> INFO.txt
           fi
           cat INFO.txt
-        working-directory: ${{ github.event.inputs.DEVICE_PATH }}
-        
+        working-directory: ${{ inputs.DEVICE_PATH }}
+
       - name: 🛠️ Build OFRP
         run: |
           set +e
@@ -239,23 +244,23 @@ jobs:
           export CCACHE_EXEC=$(command -v ccache)
           export CCACHE_MAXSIZE=5G
           export USE_CCACHE=1
-          sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go         
+          sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           set -e
           lunch twrp_${{ env.LUNCH_TARGET }}-ap2a-eng
           (while true; do echo `date +%T` "Building OFRP..."; free -h; sleep 10; done) &
           TIP_PID=$!
-          make -j$(nproc) adbd ${{ github.event.inputs.BUILD_PARTITION }}image
+          make -j$(nproc) adbd ${{ inputs.BUILD_PARTITION }}image
           kill $TIP_PID && exit 0
 
       - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.img
-            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.zip
-          name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+            out/target/product/${{ inputs.DEVICE_NAME }}/*.img
+            out/target/product/${{ inputs.DEVICE_NAME }}/*.zip
+          name: 🦊 OrangeFox-R11.3-${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
           tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
             ### OrangeFox Recovery Build - Unofficial
@@ -263,11 +268,11 @@ jobs:
             📱 Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
             ✅ Trigger Commit: [${{ github.sha }}](${{ env.DEVICE_TREE_URL }}/commit/${{ github.sha }})
             🔧 Magisk Version: ${{ inputs.MAGISK_VERSION }}
-            📶 Target API Level: ${{ github.event.inputs.TARGET_API_LEVEL }}
-            🧩 Apply wifi 14.1 patches: ${{ github.event.inputs.USE_PATCHES }}
-            🧩 Apply skkk 12.1 patches: ${{ github.event.inputs.USE_SKKK_PATCHES }}
+            📶 Target API Level: ${{ inputs.TARGET_API_LEVEL }}
+            🧩 Apply wifi 14.1 patches: ${{ inputs.USE_PATCHES }}
+            🧩 Apply skkk 12.1 patches: ${{ inputs.USE_SKKK_PATCHES }}
             ### ⚠️ Warning
             - For ${{ inputs.DEVICE_NAME }} only!
-          body_path: ${{ github.event.inputs.DEVICE_PATH }}/INFO.txt
+          body_path: ${{ inputs.DEVICE_PATH }}/INFO.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
