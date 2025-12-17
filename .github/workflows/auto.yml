@@ -141,7 +141,7 @@ jobs:
           cd $WORKINGDIR
                     
       - name: 🧩 Apply skkk 12.1 patches
-        if: ${{ github.event.inputs.USE_SKKK_PATCHES == true && inputs.MANIFEST_BRANCH == '12.1' }}
+        if: ${{ inputs.USE_SKKK_PATCHES == true && inputs.MANIFEST_BRANCH == '12.1' }}
         run: |
           WORKINGDIR=$(pwd)
           sed -i 's/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-19.1-caf" \/>/<project name="android_hardware_qcom_bootctrl" path="hardware\/qcom-caf\/bootctrl" remote="LineageOS" revision="lineage-21.0-caf" \/>/g' $WORKINGDIR/.repo/manifests/twrp-default.xml
@@ -153,7 +153,7 @@ jobs:
           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 12.1分支skkk补丁应用失败/无新补丁，继续构建"
           cd $WORKINGDIR
       # - name: 🧩 Apply skkk 12.1 patches
-      #   if: ${{ github.event.inputs.USE_PATCHES == true && inputs.MANIFEST_BRANCH == '14.1' }}
+      #   if: ${{ inputs.USE_PATCHES == true && inputs.MANIFEST_BRANCH == '14.1' }}
       #   run: |
       #      WORKINGDIR=$(pwd)
       #      cd $WORKINGDIR/bootable/recovery
@@ -162,7 +162,7 @@ jobs:
       #不要启用，会冲突
       
       - name: 🧩 Apply wifi 14.1 patches
-        if: ${{ github.event.inputs.USE_PATCHES == true && inputs.MANIFEST_BRANCH == '14.1' }}
+        if: ${{ inputs.USE_PATCHES == true && inputs.MANIFEST_BRANCH == '14.1' }}
         run: |
           WORKINGDIR=$(pwd)
           cd $WORKINGDIR/bootable/recovery
