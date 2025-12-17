@@ -116,8 +116,8 @@ jobs:
       - name: 📥 Pull TWRP Source
         run: |
           if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
-            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git"
-            TWRP_BRANCH="twrp-14.1"
+            TWRP_REPO="https://github.com/nebrassy/platform_manifest_twrp_aosp.git"
+            TWRP_BRANCH="twrp-14"
             repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
             repo sync
           fi
@@ -218,7 +218,6 @@ jobs:
           files: |
             out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.img
             out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.zip
-            out/target/product/${{ github.event.inputs.DEVICE_NAME }}/*.md5
           name: 🦊 OrangeFox-R11.3-${{ github.event.inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
           tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
