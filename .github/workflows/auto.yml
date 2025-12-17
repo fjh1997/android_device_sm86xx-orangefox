@@ -52,12 +52,12 @@ on:
         description: '🧩 Apply wifi patches'
         type: boolean
         required: true
-        default: true
+        default: false
       USE_SKKK_PATCHES:
         description: '🧩 Apply skkk 12.1 patches'
         type: boolean
         required: true
-        default: true
+        default: false
 
 jobs:
   build:
@@ -146,7 +146,7 @@ jobs:
             ./orangefox_sync.sh --branch ${{ github.event.inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
           fi
                     
-      - name: 🧩 Patch 12.1 Branch (skkk patches)
+      - name: 🧩 Apply skkk 12.1 patches
         if: ${{ github.event.inputs.USE_SKKK_PATCHES == true && inputs.MANIFEST_BRANCH == '12.1' }}
         run: |
           WORKINGDIR=$(pwd)
@@ -162,14 +162,25 @@ jobs:
           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 12.1分支skkk补丁应用失败/无新补丁，继续构建"
           cd $WORKINGDIR
 
-      # - name: 🧩 Patch 14.1 Branch
+      # - name: 🧩 Apply skkk 12.1 patches
       #   if: ${{ github.event.inputs.USE_PATCHES == true && inputs.MANIFEST_BRANCH == '14.1' }}
       #   run: |
       #      WORKINGDIR=$(pwd)
       #      cd $WORKINGDIR/bootable/recovery
-      #      git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1分支wifi补丁应用失败/无新补丁，继续构建"
+      #      git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1分支skkk补丁应用失败/无新补丁，继续构建"
       #      cd $WORKINGDIR
       #不要启用，会冲突
+      
+      - name: 🧩 🧩 Apply wifi 14.1 patches
+        if: ${{ github.event.inputs.USE_PATCHES == true && inputs.MANIFEST_BRANCH == '14.1' }}
+        run: |
+          WORKINGDIR=$(pwd)
+          cd $WORKINGDIR/bootable/recovery
+          git apply $WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/patches/*.patch || echo "⚠️ 14.1分支wifi补丁应用失败，继续构建"
+          cd $WORKINGDIR
+          git clone https://github.com/adontoo/android_external_libmicrohttpd -b ofox-14.1 external/libmicrohttpd
+          rm -rf bionic
+          git clone https://github.com/adontoo/OrangeFox-android_platform_bionic bionic
          
       - name: 📱 Setup device
         run: |
@@ -254,7 +265,7 @@ jobs:
             📱 Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
             ✅ Trigger Commit: [${{ github.sha }}](${{ env.DEVICE_TREE_URL }}/commit/${{ github.sha }})
             🔧 Magisk Version: ${{ inputs.MAGISK_VERSION }}
-            🧩 Apply wifi patches: ${{ github.event.inputs.USE_PATCHES }}
+            🧩 Apply wifi 14.1 patches: ${{ github.event.inputs.USE_PATCHES }}
             🧩 Apply skkk 12.1 patches: ${{ github.event.inputs.USE_SKKK_PATCHES }}
             ### ⚠️ Warning
             - For ${{ inputs.DEVICE_NAME }} only!
