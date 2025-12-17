@@ -152,7 +152,8 @@ jobs:
           cd $WORKINGDIR/bootable/recovery
           git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 12.1分支skkk补丁应用失败/无新补丁，继续构建"
           cd $WORKINGDIR
-      # - name: 🧩 Apply skkk 12.1 patches
+
+      # - name: 🧩 Apply skkk 14.1 patches
       #   if: ${{ inputs.USE_PATCHES == true && inputs.MANIFEST_BRANCH == '14.1' }}
       #   run: |
       #      WORKINGDIR=$(pwd)
@@ -183,7 +184,7 @@ jobs:
         run: |
           WORKINGDIR=$(pwd)
           TARGET_API_LEVEL="${{ github.event.inputs.TARGET_API_LEVEL }}"
-          DEVICE_MK_PATH="$WORKINGDIR/device.mk"
+          DEVICE_MK_PATH="$WORKINGDIR/${{ github.event.inputs.DEVICE_PATH }}/device.mk"
           if ! grep -q '^BOARD_SHIPPING_API_LEVEL' "$DEVICE_MK_PATH"; then
             echo "BOARD_SHIPPING_API_LEVEL := $TARGET_API_LEVEL" >> "$DEVICE_MK_PATH" && echo "✅ Added BOARD_SHIPPING_API_LEVEL=$TARGET_API_LEVEL in $DEVICE_MK_PATH"
           else
