@@ -49,7 +49,7 @@ on:
           - MagiskAlpha
           - MagiskDelta
       USE_PATCHES:
-        description: '🧩 Apply wifi patches'
+        description: '🧩 Apply wifi 14.1 patches'
         type: boolean
         required: true
         default: false
