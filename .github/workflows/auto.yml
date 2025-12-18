@@ -145,7 +145,6 @@ jobs:
             chmod +x sync/orangefox_sync.sh
             cd sync
             ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
-            repo sync
             cd $WORKINGDIR
           fi
 
