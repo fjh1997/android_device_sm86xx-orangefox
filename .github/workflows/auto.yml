@@ -133,17 +133,19 @@ jobs:
             TWRP_BRANCH="twrp-14"
             repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
             repo sync
+            git clone https://gitlab.com/OrangeFox/sync.git -b master
+            chmod +x sync/orangefox_sync.sh
+            cd sync
+            ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
+            cd $WORKINGDIR
           else
-            TWRP_REPO="https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp"
-            TWRP_BRANCH="twrp-12.1"
-            repo init -u $TWRP_REPO -b $TWRP_BRANCH --depth=1
+            git clone https://gitlab.com/OrangeFox/sync.git -b master
+            chmod +x sync/orangefox_sync.sh
+            cd sync
+            ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
             repo sync
+            cd $WORKINGDIR
           fi
-          git clone https://gitlab.com/OrangeFox/sync.git -b master
-          chmod +x sync/orangefox_sync.sh
-          cd sync
-          ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path $WORKINGDIR
-          cd $WORKINGDIR
 
       - name: 🧩 Apply skkk 12.1 patches
         if: ${{ inputs.USE_SKKK_PATCHES == true && inputs.MANIFEST_BRANCH == '12.1' }}

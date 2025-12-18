@@ -1,3 +1,4 @@
+![a641d9263f25f0e578f6d814d48e0d02](_res/a641d9263f25f0e578f6d814d48e0d02.jpeg)
 # TWRP device tree for OPLUS pineapple sreies
 
 ## Supported devices
