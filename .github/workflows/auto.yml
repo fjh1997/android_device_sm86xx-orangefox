@@ -120,11 +120,11 @@ jobs:
       - name: 🌐 Build Environment
         run: |
           export DEBIAN_FRONTEND=noninteractive
-          sudo apt update && sudo apt upgrade -y
+          sudo apt update && sudo apt install software-properties-common lsb-release -y
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
-          git clone https://github.com/xccxxcys/Twrp_android_build_env.git -b master
-          sudo bash android_build_env.sh
+          sudo curl -L -o /usr/local/bin/repo https://storage.googleapis.com/git-repo-downloads/repo
+          sudo chmod a+rx /usr/local/bin/repo
 
       - name: 📥 Pull TWRP Source & Run OrangeFox Sync
         run: |
