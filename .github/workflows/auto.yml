@@ -121,9 +121,11 @@ jobs:
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt update && sudo apt upgrade -y
-          sudo apt install repo -y
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
+          git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master
+          cd scripts
+          sudo bash setup/android_build_env.sh
 
       - name: 📥 Pull TWRP Source & Run OrangeFox Sync
         run: |
