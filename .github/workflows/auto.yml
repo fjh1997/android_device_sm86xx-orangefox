@@ -124,7 +124,6 @@ jobs:
           git config --global user.name ${{ github.actor }}
           git config --global user.email ${{ github.actor }}@users.noreply.github.com
           git clone https://github.com/xccxxcys/Twrp_android_build_env.git -b master
-          cd scripts
           sudo bash android_build_env.sh
 
       - name: 📥 Pull TWRP Source & Run OrangeFox Sync
