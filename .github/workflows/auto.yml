@@ -238,8 +238,8 @@ jobs:
           export CCACHE_MAXSIZE=5G
           export USE_CCACHE=1
           sed -i 's/return sandboxConfig\.working/return false/g' build/soong/ui/build/sandbox_linux.go
-          source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
+          source build/envsetup.sh      
           set -e
           if [ "${{ inputs.MANIFEST_BRANCH }}" = "14.1" ]; then
             lunch twrp_${{ env.LUNCH_TARGET }}-ap2a-eng
@@ -249,10 +249,8 @@ jobs:
             echo "❌ Unsupported MANIFEST_BRANCH: ${{ inputs.MANIFEST_BRANCH }}"
             exit 1
           fi
-          (while true; do echo `date +%T` "Building OFRP..."; free -h; sleep 10; done) &
-          TIP_PID=$!
-          make -j$((`nproc` - 2)) adbd ${{ inputs.BUILD_PARTITION }}image
-          kill $TIP_PID && exit 0
+          make clean
+          make adbd ${{ inputs.BUILD_TARGET }}image -j$(nproc --all)
 
       - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2

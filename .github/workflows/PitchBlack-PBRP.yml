@@ -1,0 +1,244 @@
+name: PitchBlack [PBRP]
+on:
+  workflow_dispatch:
+    inputs:
+      MANIFEST_BRANCH:
+        description: 'PBRP Manifest Branch'
+        required: true
+        default: 'android-14.0'
+        type: choice
+        options:
+          - android-14.0
+          - android-12.1
+          - android-11.0
+      DEVICE_TREE:
+        description: 'Custom Recovery Tree URL'
+        required: true
+        default: 'https://github.com/xccxxcys/device_xiaomi_liuqin-TWRP-OF'
+      DEVICE_TREE_BRANCH:
+        description: 'Custom Recovery Tree Branch'
+        required: true
+        default: 'main'
+      DEVICE_NAME:
+        description: 'Device Codename (match PRODUCT_DEVICE)'
+        required: true
+        default: 'liuqin'
+      DEVICE_PATH:
+        description: 'Device Path (match BoardConfig.mk DEVICE_PATH)'
+        required: true
+        default: 'device/xiaomi/liuqin'
+      BUILD_TARGET:
+        description: 'Build Target (use "pbrp" for Android 11+)'
+        required: true
+        default: 'recovery'
+        type: choice
+        options:
+          - pbrp
+          - boot
+          - recovery
+          - vendorboot
+
+jobs:
+  build:
+    name: Build PBRP by ${{ github.actor }}
+    runs-on: ubuntu-latest
+    if: github.event.repository.owner.id == github.event.sender.id
+    env:
+      PBRP_VERSION: "4.0"      
+      OUTPUT_DIR: ${{ github.workspace }}/android-recovery/out/target/product/${{ inputs.DEVICE_NAME }}
+      CCACHE_MAXSIZE: "5G"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📋 Show Build Configuration
+        run: |
+          echo "=== PBRP Build Config ==="
+          echo "Manifest Branch: ${{ inputs.MANIFEST_BRANCH }}"
+          echo "Device Tree: ${{ inputs.DEVICE_TREE }} (${{ inputs.DEVICE_TREE_BRANCH }})"
+          echo "Device: ${{ inputs.DEVICE_NAME }} (Path: ${{ inputs.DEVICE_PATH }})"
+          echo "Build Target: ${{ inputs.BUILD_TARGET }}"
+          echo "Build Date: $BUILD_DATE"
+          echo "========================"
+
+      - name: 🧹 Cleanup & Maximize Resources
+        uses: rokibhasansagar/slimhub_actions@main
+
+      - name: 🛠️ Setup Build Dependencies
+        run: |
+          set -e
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt update && sudo apt upgrade -y
+          sudo apt install repo -y
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: ☕ Setup Java Environment
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: ${{ inputs.MANIFEST_BRANCH == 'android-14.0' && '17' || '8' }}
+
+      - name: 📥 Install Git-Repo
+        run: |
+          mkdir -p ~/bin
+          curl -sSL https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          echo "~/bin" >> $GITHUB_PATH
+
+      - name: 🚀 Initialize & Sync Source
+        run: |
+          set -e
+          mkdir -p android-recovery && cd android-recovery
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          repo init --depth=1 -u https://github.com/mlm-games/manifest_pb.git -b ${{ inputs.MANIFEST_BRANCH }} \
+            --single-branch --no-tags
+          repo sync -j$(nproc --all) --force-sync -c --no-clone-bundle --no-tags
+          echo "Source sync completed successfully"
+
+      - name: 📱 Clone Device Tree
+        run: |
+          set -e
+          cd android-recovery
+          mkdir -p $(dirname ${{ inputs.DEVICE_PATH }})
+          git clone --depth=1 ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} \
+            ${{ inputs.DEVICE_PATH }}
+          cd ${{ inputs.DEVICE_PATH }}
+          echo "COMMIT_ID=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          if [ ! -f "Android.mk" ] && [ ! -f "Android.bp" ]; then
+            echo "Error: Device tree missing Android.mk/Android.bp"
+            exit 1
+          fi
+
+      - name: 🔍 Detect Device Makefile
+        run: |
+          set -e
+          cd android-recovery
+          if [ -f "${{ inputs.DEVICE_PATH }}/pb_${{ inputs.DEVICE_NAME }}.mk" ]; then
+            echo "DEVICE_MAKEFILE=pb_${{ inputs.DEVICE_NAME }}" >> $GITHUB_ENV
+          elif [ -f "${{ inputs.DEVICE_PATH }}/twrp_${{ inputs.DEVICE_NAME }}.mk" ]; then
+            echo "DEVICE_MAKEFILE=twrp_${{ inputs.DEVICE_NAME }}" >> $GITHUB_ENV
+          elif [ -f "${{ inputs.DEVICE_PATH }}/omni_${{ inputs.DEVICE_NAME }}.mk" ]; then
+            echo "DEVICE_MAKEFILE=omni_${{ inputs.DEVICE_NAME }}" >> $GITHUB_ENV
+          else
+            echo "Error: No valid Makefile found (pb/twrp/omni_${{ inputs.DEVICE_NAME }}.mk)"
+            exit 1
+          fi
+          echo "Detected Makefile: ${{ env.DEVICE_MAKEFILE }}.mk"
+
+      - name: 🐍 Install Python2 (Legacy Branches)
+        if: inputs.MANIFEST_BRANCH == 'android-11.0' || inputs.MANIFEST_BRANCH == 'android-12.1'
+        run: |
+          sudo apt install -y --no-install-recommends python2 python-is-python2
+          python --version
+
+      - name: 📝 Fix Missing Fonts
+        run: |
+          set -e
+          cd android-recovery/external/noto-fonts
+          mkdir -p other && cd other
+          curl -sSL https://github.com/cd-Crypton/custom-recovery-extras/raw/main/missing-font.zip -o missing-font.zip
+          unzip -oq missing-font.zip
+          rm -f missing-font.zip
+
+      - name: ⚡ Setup ccache (Speed Up Build)
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          create-symlink: true
+          max-size: ${{ env.CCACHE_MAXSIZE }}
+          key: ${{ inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-ccache
+          restore-keys: |
+            ${{ inputs.DEVICE_NAME }}-${{ inputs.MANIFEST_BRANCH }}-ccache
+            ${{ inputs.DEVICE_NAME }}-ccache
+
+      - name: 🏗️ Build PitchBlack (with Logs)
+        run: |
+          set -e
+          cd android-recovery
+          source build/envsetup.sh
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export CCACHE_DIR=$GITHUB_WORKSPACE/.ccache
+          export CCACHE_EXEC=$(command -v ccache)
+          export USE_CCACHE=1
+          ccache -s
+          lunch ${{ env.DEVICE_MAKEFILE }}-eng
+          if [ "${{ inputs.BUILD_TARGET }}" != "pbrp" ]; then
+            mka ${{ inputs.BUILD_TARGET }}image -j$(nproc --all) 2>&1 | tee build.log
+          else
+            mka ${{ inputs.BUILD_TARGET }} -j$(nproc --all) 2>&1 | tee build.log
+          fi
+          if [ ! -d "$OUTPUT_DIR" ]; then
+            echo "Error: Output directory not found"
+            exit 1
+          fi
+          if [ "${{ inputs.BUILD_TARGET }}" == "pbrp" ]; then
+            find $OUTPUT_DIR -name "recovery*.img" -exec mv {} $OUTPUT_DIR/PBRP-${PBRP_VERSION}-${{ inputs.DEVICE_NAME }}-${BUILD_DATE}.img \;
+            find $OUTPUT_DIR -name "PBRP*.zip" -exec mv {} $OUTPUT_DIR/PBRP-${PBRP_VERSION}-${{ inputs.DEVICE_NAME }}-${BUILD_DATE}.zip \;
+          else
+            find $OUTPUT_DIR -name "${{ inputs.BUILD_TARGET }}*.img" -exec mv {} $OUTPUT_DIR/PBRP-${PBRP_VERSION}-${{ inputs.DEVICE_NAME }}-${BUILD_DATE}-${{ inputs.BUILD_TARGET }}.img \;
+          fi
+          ccache -s
+          echo "Build completed successfully!"
+
+      - name: 📊 Generate Build Info & MD5
+        run: |
+          set -e
+          cd $OUTPUT_DIR
+          echo "PBRP Build Information
+          ====================
+          Version: $PBRP_VERSION
+          Manifest Branch: ${{ inputs.MANIFEST_BRANCH }}
+          Device: ${{ inputs.DEVICE_NAME }}
+          Device Tree: ${{ inputs.DEVICE_TREE }} (${{ inputs.DEVICE_TREE_BRANCH }})
+          Device Tree Commit: ${{ env.COMMIT_ID }}
+          Build Target: ${{ inputs.BUILD_TARGET }}
+          Build Date: $BUILD_DATE
+          GitHub Run ID: ${{ github.run_id }}
+          
+          MD5 Checksums:
+          " > INFO.txt
+          for file in $(find . -maxdepth 1 -name "PBRP-*.img" -o -name "PBRP-*.zip"); do
+            md5sum $file >> INFO.txt
+          done
+          cat INFO.txt
+
+      - name: 📤 Upload Build Artifacts
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.OUTPUT_DIR }}/PBRP-*.img
+            ${{ env.OUTPUT_DIR }}/PBRP-*.zip
+            ${{ env.OUTPUT_DIR }}/ramdisk-recovery.*
+            ${{ env.OUTPUT_DIR }}/INFO.txt
+            ${{ github.workspace }}/android-recovery/build.log
+          name: Unofficial PBRP ${{ env.PBRP_VERSION }} - ${{ inputs.DEVICE_NAME }} - ${{ env.BUILD_DATE }}
+          tag_name: PBRP-${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
+          body: |
+            ## Unofficial PBRP Build for ${{ inputs.DEVICE_NAME }}
+            - **Manifest Branch**: ${{ inputs.MANIFEST_BRANCH }}
+            - **Device Tree**: [${{ inputs.DEVICE_TREE_BRANCH }}](${{ inputs.DEVICE_TREE }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
+            - **Device Tree Commit**: [${{ env.COMMIT_ID }}](${{ inputs.DEVICE_TREE }}/commit/${{ env.COMMIT_ID }})
+            - **Build Target**: ${{ inputs.BUILD_TARGET }}
+            - **Build Date**: ${{ env.BUILD_DATE }}
+            
+            ### MD5 Checksums
+            See [INFO.txt](https://github.com/${{ github.repository }}/releases/download/${{ env.tag_name }}/INFO.txt) for full checksums.
+            
+            ### Notes
+            - Use "pbrp" target for Android 11+ devices.
+            - Verify MD5 before flashing.
+            - Report issues with build.log attached.
+          prerelease: false
+
+      - name: 🚨 Upload Failure Logs (On Error)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PBRP-Build-Failure-${{ inputs.DEVICE_NAME }}-${{ github.run_id }}
+          path: |
+            ${{ github.workspace }}/android-recovery/build.log
+            ${{ env.OUTPUT_DIR }}/*.log
+          retention-days: 14
