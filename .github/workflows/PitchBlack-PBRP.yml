@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PBRP_VERSION: "4.0"
-      BUILD_DATE: ${{ github.sha_SHORT }}-${{ github.run_id }}  # 简化构建日期标识
+      BUILD_DATE: ${{ github.sha_short }}-${{ github.run_id }}  # 简化构建日期标识
       OUTPUT_DIR: android-recovery/out/target/product/${{ inputs.DEVICE_NAME }}
       CCACHE_MAXSIZE: "5G"
     permissions:
@@ -81,6 +81,7 @@ jobs:
       - name: 🐍 Install Python2 (Legacy Branches)
         if: inputs.MANIFEST_BRANCH == 'android-11.0' || inputs.MANIFEST_BRANCH == 'android-12.1'
         run: |
+          set -eo pipefail
           sudo apt install -y python2 python-is-python2
           python --version
 
