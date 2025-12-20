@@ -15,7 +15,7 @@ on:
         required: true
         default: 'https://github.com/xccxxcys/OrangeFox-Recovery-Builder-2024'
       DEVICE_TREE_BRANCH:
-        description: '🌱 Device Tree Branch'
+        description: '🌿 Device Tree Branch'
         required: true
         default: 'OrangeFox'
       DEVICE_PATH:
@@ -163,11 +163,11 @@ jobs:
       # - name: 🧩 Apply skkk 14.1 patches
       #   if: ${{ inputs.USE_PATCHES == true && inputs.MANIFEST_BRANCH == '14.1' }}
       #   run: |
-      #      WORKINGDIR=$(pwd)
-      #      cd $WORKINGDIR/bootable/recovery
-      #      git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1分支skkk补丁应用失败/无新补丁，继续构建"
-      #      cd $WORKINGDIR
-      #不要启用，会冲突
+      #     WORKINGDIR=$(pwd)
+      #     cd $WORKINGDIR/bootable/recovery
+      #     git fetch https://github.com/ymdzq/OrangeFox_Recovery fox_12.1 && git cherry-pick 36289fac..05b3e1b9 || echo "⚠️ 14.1分支skkk补丁应用失败/无新补丁，继续构建"
+      #     cd $WORKINGDIR
+      # 不要启用，会冲突
       
       - name: 🧩 Apply wifi 14.1 patches
         if: ${{ inputs.USE_PATCHES == true && inputs.MANIFEST_BRANCH == '14.1' }}
@@ -250,7 +250,7 @@ jobs:
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           set -e
-          lunch twrp_${{ LUNCH_TARGET }}-eng
+          lunch twrp_${{ env.LUNCH_TARGET }}-eng
           (while true; do echo `date +%T` "Building OFRP..."; free -h; sleep 10; done) &
           TIP_PID=$!
           make -j$((`nproc` - 2)) adbd ${{ inputs.BUILD_PARTITION }}image
