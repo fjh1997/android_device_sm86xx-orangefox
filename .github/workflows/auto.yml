@@ -250,18 +250,18 @@ jobs:
           source build/envsetup.sh
           export ALLOW_MISSING_DEPENDENCIES=true
           set -e
-          lunch twrp_${{ env.LUNCH_TARGET }}-ap2a-eng
+          lunch twrp_${{ LUNCH_TARGET }}-eng
           (while true; do echo `date +%T` "Building OFRP..."; free -h; sleep 10; done) &
           TIP_PID=$!
-          make -j$(nproc) adbd ${{ inputs.BUILD_PARTITION }}image
+          make -j$((`nproc` - 2)) adbd ${{ inputs.BUILD_PARTITION }}image
           kill $TIP_PID && exit 0
 
       - name: 📤 Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            out/target/product/${{ inputs.DEVICE_NAME }}/*.img
-            out/target/product/${{ inputs.DEVICE_NAME }}/*.zip
+            out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
+            out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
           name: 🦊 OrangeFox-R11.3-${{ inputs.DEVICE_NAME }}-${{ env.BUILD_DATE }}-${{ github.run_id }}
           tag_name: ${{ env.BUILD_DATE }}-${{ github.run_id }}
           body: |
