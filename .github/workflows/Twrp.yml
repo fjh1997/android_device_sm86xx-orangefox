@@ -13,7 +13,7 @@ on:
       DEVICE_TREE_URL:
         description: "Device tree url"
         required: true
-        default: "https://github.com/xccxxcys/device_xiaomi_liuqin-TWRP-OF"
+        default: "https://github.com/xccxxcys/OrangeFox-Recovery-Builder-2024"
       DEVICE_TREE_BRANCH:
         description: "Device tree branch"
         required: true
@@ -21,11 +21,11 @@ on:
       DEVICE_PATH:
         description: "Device path"
         required: true
-        default: "device/xiaomi/liuqin"
+        default: "device/oplus/sm86xx"
       DEVICE_NAME:
         description: "Device codename"
         required: true
-        default: "liuqin"
+        default: "sm86xx"
       BUILD_TARGET:
         description: "Build target partition"
         required: true
@@ -107,7 +107,6 @@ jobs:
             --depth=1 \
             --no-repo-verify  # 跳过repo版本验证（避免无关警告）
           
-          # 恢复原始 repo sync 命令，去除速度优化参数
           repo sync
           echo "Source sync completed successfully"
 
@@ -149,10 +148,6 @@ jobs:
 
       - name: 🏗️ Build TWRP (with ccache & logs)
         run: |
-          set -eo pipefail
-          # 初始化构建环境
-          source build/envsetup.sh
-          # 配置ccache
           export ALLOW_MISSING_DEPENDENCIES=true
           export CCACHE_DIR=$GITHUB_WORKSPACE/.ccache
           export CCACHE_EXEC=$(command -v ccache)
