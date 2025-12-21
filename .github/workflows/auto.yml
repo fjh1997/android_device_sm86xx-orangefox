@@ -15,7 +15,7 @@ on:
         required: true
         default: 'https://github.com/xccxxcys/OrangeFox-Recovery-Builder-2024'
       DEVICE_TREE_BRANCH:
-        description: '🌿 Device Tree Branch'
+        description: '🌱 Device Tree Branch'
         required: true
         default: 'OrangeFox'
       DEVICE_PATH:
@@ -263,7 +263,10 @@ jobs:
             exit 1
           fi
           make clean
+          (while true; do echo "🛠️ [$(date +%T)] Building OFRP... | Free Mem: $(free -h | awk '/Mem:/ {print $4}')"; sleep 10; done) &
+          TIP_PID=$!
           mka adbd ${{ inputs.BUILD_PARTITION }}image -j$(nproc --all)
+          kill $TIP_PID && exit 0
 
       - name: 💾 Include Recovery Installer
         if: ${{ inputs.RECOVERY_INSTALLER == true }}
