@@ -15,7 +15,7 @@
 	export FOX_USE_ZSTD_BINARY=1
 	export FOX_USE_DATE_BINARY=1
 	export FOX_DELETE_AROMAFM=1
-	#export FOX_VANILLA_BUILD=1
+	export FOX_VANILLA_BUILD=1
     export FOX_MAINTAINER_PATCH_VERSION=$(date +%y%m%d)  # 维护者补丁版本（按日期生成）
     export OF_MAINTAINER="Nanya"  # 维护者名称
     export FOX_MOVE_MAGISK_INSTALLER_TO_RAMDISK=1  # 将Magisk安装包移至ramdisk
