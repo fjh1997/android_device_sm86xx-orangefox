@@ -20,10 +20,15 @@ $(call inherit-product, vendor/twrp/config/common.mk)
 # some OrangeFox-specific settings
 $(call inherit-product, $(LOCAL_PATH)/fox_sm86xx.mk)
 
+# Installs gsi keys into ramdisk, to boot a GSI with verified boot.
+$(call inherit-product, $(SRC_TARGET_DIR)/product/gsi_keys.mk)
+
 # Shipping API level
 BOARD_SHIPPING_API_LEVEL    := 34
 PRODUCT_SHIPPING_API_LEVEL  := 34
 PRODUCT_TARGET_VNDK_VERSION := 34
+
+AB_OTA_PARTITIONS ?= boot vendor_boot recovery vendor_dlkm dtbo vbmeta
 
 # Dynamic partitions
 PRODUCT_USE_DYNAMIC_PARTITIONS := true

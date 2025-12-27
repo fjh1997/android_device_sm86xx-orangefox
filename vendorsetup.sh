@@ -10,8 +10,6 @@ echo -e "\x1b[96mAdontoo: 开始加载OrangeFox配置变量...\x1b[m"
 export TW_DEFAULT_LANGUAGE="zh_CN"  # 默认中文语言
 export LC_ALL="C"  # 统一字符编码，避免中文乱码
 export ALLOW_MISSING_DEPENDENCIES=true  # 允许缺失非核心依赖（兼容部分库缺失场景）
-export FOX_AB_DEVICE=1  # 标记为A/B分区设备
-export OF_AB_DEVICE_WITH_RECOVERY_PARTITION=1  # A/B设备且存在独立recovery分区
 export OF_USE_LZ4_COMPRESSION=1  # 使用LZ4压缩算法
 #export FOX_VANILLA_BUILD=1  # 纯净版构建（不含额外预装组件）
 #export OF_NO_MIUI_PATCH_WARNING=1  # 禁用MIUI补丁警告
@@ -83,7 +81,7 @@ export OF_USE_GREEN_LED=0  # 禁用绿色LED指示灯
 export OF_FLASHLIGHT_ENABLE=0  # 关闭闪光灯功能（按需启用）
  
 #界面与时区配置
- 
+ export FOX_USE_LANDSCAPE_MODE=1  # 强制启用横屏界面（关键变量）
 export OF_SCREEN_H=2400  # 屏幕高度（像素）
 export OF_STATUS_H=116  # 状态栏高度（像素）
 export OF_STATUS_INDENT_LEFT=30  # 状态栏左侧缩进（像素）
@@ -91,7 +89,7 @@ export OF_STATUS_INDENT_RIGHT=30  # 状态栏右侧缩进（像素）
 export OF_HIDE_NOTCH=1  # 隐藏刘海屏区域
 export OF_ALLOW_DISABLE_NAVBAR=0  # 禁止禁用导航栏
 export OF_DEFAULT_TIMEZONE="TAIST-8;TAIDT"  # 设置默认时区为北京时间
-export OF_OPTIONS_LIST_NUM=6  # 安装选项列表最大数量（6个，超出显示滚动条）
+export OF_OPTIONS_LIST_NUM=8  # 安装选项列表最大数量（6个，超出显示滚动条）
 export OF_DEFAULT_KEYMASTER_VERSION=4.0  # 指定默认keymaster版本
  
 #刷机属性调整（新增适配功能）
