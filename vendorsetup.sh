@@ -81,7 +81,7 @@ export OF_USE_GREEN_LED=0  # 禁用绿色LED指示灯
 export OF_FLASHLIGHT_ENABLE=0  # 关闭闪光灯功能（按需启用）
  
 #界面与时区配置
- export FOX_USE_LANDSCAPE_MODE=1  # 强制启用横屏界面（关键变量）
+#export FOX_USE_LANDSCAPE_MODE=1  # 强制启用横屏界面（关键变量）
 export OF_SCREEN_H=2400  # 屏幕高度（像素）
 export OF_STATUS_H=116  # 状态栏高度（像素）
 export OF_STATUS_INDENT_LEFT=30  # 状态栏左侧缩进（像素）
