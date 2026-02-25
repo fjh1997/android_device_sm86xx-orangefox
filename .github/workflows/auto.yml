@@ -13,11 +13,11 @@ on:
       DEVICE_TREE:
         description: '📱 Device Tree URL'
         required: true
-        default: 'https://github.com/xccxxcys/OrangeFox-Recovery-Builder-2024'
+        default: 'https://github.com/fjh1997/android_device_sm86xx-orangefox'
       DEVICE_TREE_BRANCH:
         description: '🌱 Device Tree Branch'
         required: true
-        default: 'OrangeFox'
+        default: 'patch-1'
       DEVICE_PATH:
         description: '📂 Specify your Device Path'
         required: true
