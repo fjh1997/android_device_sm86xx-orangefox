@@ -122,9 +122,9 @@ TW_USE_TOOLBOX                := true
 
 # TWRP display
 TW_BRIGHTNESS_PATH      := /sys/class/backlight/panel0-backlight/brightness
-TW_DEFAULT_BRIGHTNESS   := 200
+TW_DEFAULT_BRIGHTNESS   := 2048
 TW_FRAMERATE            := 120
-TW_MAX_BRIGHTNESS       := 255
+TW_MAX_BRIGHTNESS       := 4095
 TW_SCREEN_BLANK_ON_BOOT := true
 TW_THEME                := portrait_hdpi
 
