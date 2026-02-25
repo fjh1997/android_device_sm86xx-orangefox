@@ -8,7 +8,7 @@
  
  #display for pad
  
- OF_SCREEN_DPI := 240  
+ OF_SCREEN_DPI := 420  
  OF_OPTIONS_LIST_NUM := 4
  OF_USE_GREEN_LED := 0
 
