@@ -17,7 +17,7 @@ on:
       DEVICE_TREE_BRANCH:
         description: '🌱 Device Tree Branch'
         required: true
-        default: 'patch-1'
+        default: 'OrangeFox'
       DEVICE_PATH:
         description: '📂 Specify your Device Path'
         required: true
