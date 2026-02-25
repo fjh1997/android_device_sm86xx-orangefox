@@ -125,7 +125,6 @@ TW_BRIGHTNESS_PATH      := /sys/class/backlight/panel0-backlight/brightness
 TW_DEFAULT_BRIGHTNESS   := 2048
 TW_FRAMERATE            := 120
 TW_MAX_BRIGHTNESS       := 4095
-TW_SCREEN_BLANK_ON_BOOT := true
 TW_THEME                := portrait_hdpi
 
 # TWRP file system
@@ -163,4 +162,5 @@ TW_EXTRA_LANGUAGES                      := true
 TW_LOAD_VENDOR_MODULES                  := "adsp_loader_dlkm.ko goodix_core.ko oplus_chg_v2.ko stm_st54se_gpio.ko nxp-nci.ko cnss_prealloc.ko cnss_nl.ko wlan_firmware_service.ko cnss_plat_ipc_qmi_svc.ko cnss_utils.ko cnss2.ko gsim.ko rmnet_mem.ko ipam.ko rfkill.ko cfg80211.ko"
 TW_LOAD_VENDOR_MODULES_EXCLUDE_GKI      := true
 TW_NO_SCREEN_BLANK                      := true
+TW_NO_SCREEN_TIMEOUT                    := true
 TW_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID  := true
