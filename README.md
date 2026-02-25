@@ -2,7 +2,15 @@
 # TWRP device tree for OPLUS pineapple sreies
 
 ## Supported devices
-- OnePlus Pad pro
+- OnePlus ACE3 pro
+## Possible Supported devices：
+- OnePlus 12 (CN)
+- OnePlus Ace 3 Pro (CN)
+- OnePlus Ace 3V (CN)
+- OnePlus Ace 5 (CN)
+- Realme GT 5 Pro (CN)
+- Realme GT 6 (CN)
+
 
 ## About WLAN
 
